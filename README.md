@@ -1,14 +1,36 @@
-# MaconPLast
+# Maconta Plast
 
-Landing page comercial responsiva para una empresa de productos plásticos.
+Tienda web responsiva con catálogo, carrito de compra, pedidos y panel administrativo privado.
 
-## Estructura
+## Iniciar el proyecto
 
-- `index.html`: contenido principal.
-- `assets/css/styles.css`: diseño y adaptación móvil.
-- `assets/js/main.js`: menú, filtros, animaciones y formulario.
-- `assets/images/`: recursos visuales del sitio.
+Requiere Node.js 22.5 o posterior.
 
-## Uso
+```bash
+npm install
+npm start
+```
 
-Abre `index.html` directamente en el navegador. Para desarrollo local también puedes usar cualquier servidor estático, por ejemplo Live Server.
+Abre `http://localhost:3000`. El panel está disponible en `http://localhost:3000/admin.html`.
+
+## Acceso administrativo temporal
+
+- Usuario: `admin1`
+- Contraseña: `admin1`
+
+Estas credenciales son temporales. Cámbialas desde Configuración antes de publicar la web.
+
+## Funciones
+
+- Productos: crear, editar, eliminar, ordenar, cambiar precio, descripción, imagen, stock y disponibilidad.
+- Categorías: crear, renombrar, ordenar y eliminar categorías sin productos asociados.
+- Tienda: catálogo dinámico, filtros, carrito persistente y registro de pedidos.
+- Ventas: listado privado, detalle y estados pendiente, confirmado, completado o cancelado.
+- Configuración: WhatsApp, correo visible, dirección, horario, texto del footer y credenciales administrativas.
+- Imágenes nuevas: se almacenan en `images/uploads/`.
+
+## Datos y copias de seguridad
+
+La aplicación crea `data/maconta.db` automáticamente. Para respaldar la tienda, detén el servidor y guarda una copia de ese archivo junto con `images/uploads/`.
+
+Para producción utiliza HTTPS, define `NODE_ENV=production`, conserva copias de seguridad y ejecuta Node detrás de un proxy como Nginx, Cloudflare o el servicio de hosting elegido.

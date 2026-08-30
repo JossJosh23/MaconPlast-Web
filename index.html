@@ -2,33 +2,38 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MaconPLast: soluciones plásticas para industria, comercio y hogar.">
-  <title>MaconPLast | Soluciones que toman forma</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f2f8fc">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Maconta Plast">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="Maconta Plast: envases, desechables, fundas y soluciones plásticas para tu negocio.">
+  <title>Maconta Plast | Soluciones que toman forma</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="header">
-    <a class="brand" href="#inicio" aria-label="MaconPLast, inicio">
-      <span class="brand-mark" aria-hidden="true">M</span>
-      <span>Macon<span>PLast</span></span>
+    <a class="brand" href="#inicio" aria-label="Maconta Plast, inicio">
+      <img class="brand-logo" src="images/catalogo/maconta-plast-logo-cropped.png" alt="Maconta Plast">
     </a>
-    <button class="menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false"><span></span><span></span></button>
-    <nav class="nav" aria-label="Navegación principal">
-      <a class="active" href="#inicio">Inicio</a>
-      <a href="#productos">Productos</a>
-      <a href="#nosotros">Nosotros</a>
-      <a href="#contacto">Contacto</a>
+    <button class="menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="main-nav"><span></span><span></span></button>
+    <nav class="nav" id="main-nav" aria-label="Navegación principal">
+      <a class="active" href="#inicio"><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</a>
+      <a href="#productos"><span class="nav-icon" aria-hidden="true">▦</span>Productos</a>
+      <a href="#nosotros"><span class="nav-icon" aria-hidden="true">♧</span>Nosotros</a>
+      <a href="#contacto"><span class="nav-icon" aria-hidden="true">✉</span>Contacto</a>
     </nav>
+    <button class="cart-trigger" id="cart-open" type="button" aria-label="Abrir carrito"><span aria-hidden="true">🛒</span><strong id="cart-count">0</strong></button>
     <a class="btn btn-small header-cta" href="#contacto">Cotizar ahora <span>↗</span></a>
   </header>
 
   <main>
     <section class="hero" id="inicio">
-      <img class="hero-image" src="assets/images/maconplast-hero.png" alt="Materia prima y productos plásticos de MaconPLast">
+      <img class="hero-image" src="maconplast-hero-v3.png" alt="Tarrina térmica, contenedor de tres compartimientos, botella vacía, film alimenticio y fundas zipper de Maconta Plast">
       <div class="hero-shade"></div>
       <div class="hero-content reveal">
         <div class="eyebrow"><span></span> Plástico que impulsa industrias</div>
@@ -51,33 +56,51 @@
 
     <section class="products section" id="productos">
       <div class="section-heading reveal">
-        <div><span class="kicker">NUESTRAS LÍNEAS</span><h2>Todo lo que necesitas,<br><em>en un solo lugar.</em></h2></div>
-        <p>Abastecemos proyectos de todos los tamaños con productos seleccionados por su resistencia, versatilidad y desempeño.</p>
+        <div><img class="catalog-logo" src="images/catalogo/maconta-plast-logo-cropped.png" alt="Maconta Plast, soluciones en plástico"><span class="kicker">CATÁLOGO COMPLETO</span><h2>Todo lo que necesitas,<br><em>en un solo lugar.</em></h2></div>
+        <p>Explora nuestros <strong id="catalog-count">29</strong> productos para alimentos, cocina, comercio y limpieza. Consulta presentaciones, disponibilidad y precios actualizados.</p>
       </div>
       <div class="filters" role="group" aria-label="Filtrar productos">
-        <button class="filter active" data-filter="all">Todos</button>
-        <button class="filter" data-filter="materia">Materia prima</button>
-        <button class="filter" data-filter="envases">Envases</button>
-        <button class="filter" data-filter="flexibles">Flexibles</button>
+        <button class="filter active" type="button" data-filter="all" aria-pressed="true">Todos</button>
+        <button class="filter" type="button" data-filter="envases" aria-pressed="false">Envases</button>
+        <button class="filter" type="button" data-filter="desechables" aria-pressed="false">Desechables</button>
+        <button class="filter" type="button" data-filter="fundas" aria-pressed="false">Fundas</button>
+        <button class="filter" type="button" data-filter="cocina" aria-pressed="false">Cocina</button>
       </div>
-      <div class="product-grid">
-        <article class="product-card featured reveal" data-category="materia">
-          <div class="card-number">01</div><div class="product-visual pellets"><span></span></div>
-          <div class="card-copy"><small>MATERIA PRIMA</small><h3>Resinas plásticas</h3><p>Polietileno, polipropileno y materiales recuperados para procesos exigentes.</p><a href="#contacto" aria-label="Cotizar resinas plásticas">↗</a></div>
-        </article>
-        <article class="product-card reveal" data-category="envases">
-          <div class="card-number">02</div><div class="product-visual bottle"><span></span></div>
-          <div class="card-copy"><small>ENVASES</small><h3>Envases y bidones</h3><p>Formatos resistentes para alimentos, limpieza e industria.</p><a href="#contacto" aria-label="Cotizar envases">↗</a></div>
-        </article>
-        <article class="product-card reveal" data-category="flexibles">
-          <div class="card-number">03</div><div class="product-visual rolls"><span></span><i></i></div>
-          <div class="card-copy"><small>FLEXIBLES</small><h3>Películas y rollos</h3><p>Soluciones de empaque, protección y embalaje.</p><a href="#contacto" aria-label="Cotizar películas">↗</a></div>
-        </article>
+      <div class="product-grid catalog-grid">
+        <article class="product-card reveal" data-category="envases"><div class="card-number">01</div><div class="product-visual"><img src="images/catalogo/tarrina-28oz.png" alt="Tarrina térmica de 28 onzas" loading="lazy"></div><div class="card-copy"><small>ENVASES TÉRMICOS</small><h3>Tarrina térmica 28 oz</h3><p>Con tapa plástica · Bulto de 250 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.14</strong></div><a href="#contacto" aria-label="Cotizar tarrina térmica de 28 onzas">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">02</div><div class="product-visual"><img src="images/catalogo/tarrina-medio-litro.png" alt="Tarrina térmica de medio litro" loading="lazy"></div><div class="card-copy"><small>ENVASES TÉRMICOS</small><h3>Tarrina térmica ½ litro</h3><p>Con tapa plástica · Bulto de 500 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.11</strong></div><a href="#contacto" aria-label="Cotizar tarrina térmica de medio litro">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">03</div><div class="product-visual"><img src="images/catalogo/tarrina-12oz.png" alt="Tarrina térmica de 12 onzas" loading="lazy"></div><div class="card-copy"><small>ENVASES TÉRMICOS</small><h3>Tarrina térmica 12 oz</h3><p>Con tapa plástica · Bulto de 500 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.14</strong></div><a href="#contacto" aria-label="Cotizar tarrina térmica de 12 onzas">↗</a></div></article>
+        <article class="product-card reveal" data-category="desechables"><div class="card-number">04</div><div class="product-visual"><img src="images/catalogo/lonchera-9-1-4.png" alt="Lonchera foam 9 1/4" loading="lazy"></div><div class="card-copy"><small>DESECHABLES</small><h3>Lonchera 9 ¼</h3><p>Foam sin compartimientos · Bulto de 500</p><div class="product-price"><span>Precio unitario</span><strong>$0.108</strong></div><a href="#contacto" aria-label="Cotizar lonchera 9 un cuarto">↗</a></div></article>
+        <article class="product-card reveal" data-category="desechables"><div class="card-number">05</div><div class="product-visual"><img src="images/catalogo/contenedor-hamburguesa.png" alt="Contenedor para hamburguesas 6 por 6" loading="lazy"></div><div class="card-copy"><small>DESECHABLES</small><h3>Contenedor hamburguesa</h3><p>Formato 6 × 6 · Bulto de 500 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.10</strong></div><a href="#contacto" aria-label="Cotizar contenedor de hamburguesas">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">06</div><div class="product-visual"><img src="images/catalogo/contenedor-3-compartimientos.png" alt="Contenedor de tres compartimientos" loading="lazy"></div><div class="card-copy"><small>POLIPROPILENO PP5</small><h3>Contenedor 3 compartimientos</h3><p>1250 ml, apto para altas temperaturas · Bulto de 150</p><div class="product-price"><span>Precio unitario</span><strong>$0.60</strong></div><a href="#contacto" aria-label="Cotizar contenedor de tres compartimientos">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">07</div><div class="product-visual"><img src="images/catalogo/contenedor-largo.png" alt="Contenedor largo de 2080 mililitros" loading="lazy"></div><div class="card-copy"><small>POLIPROPILENO PP5</small><h3>Contenedor largo</h3><p>2080 ml, apto para altas temperaturas · Bulto de 150</p><div class="product-price"><span>Precio unitario</span><strong>$0.50</strong></div><a href="#contacto" aria-label="Cotizar contenedor largo">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">08</div><div class="product-visual"><img src="images/catalogo/contenedor-sopero.png" alt="Contenedor sopero de 450 mililitros" loading="lazy"></div><div class="card-copy"><small>POLIPROPILENO PP5</small><h3>Contenedor sopero</h3><p>450 ml, apto para altas temperaturas · Bulto de 150</p><div class="product-price"><span>Precio unitario</span><strong>$0.18</strong></div><a href="#contacto" aria-label="Cotizar contenedor sopero">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">09</div><div class="product-visual"><img src="images/catalogo/tarrina-estriada-gris.png" alt="Tarrina estriada gris" loading="lazy"></div><div class="card-copy"><small>ENVASES</small><h3>Tarrina estriada gris</h3><p>Con tapa · Bulto de 500 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.10</strong></div><a href="#contacto" aria-label="Cotizar tarrina estriada gris">↗</a></div></article>
+        <article class="product-card reveal" data-category="desechables"><div class="card-number">10</div><div class="product-visual"><img src="images/catalogo/bandeja-rectangular.png" alt="Bandeja rectangular de foam" loading="lazy"></div><div class="card-copy"><small>DESECHABLES</small><h3>Bandeja rectangular 8 ½</h3><p>Material foam · Bulto de 500 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.08</strong></div><a href="#contacto" aria-label="Cotizar bandeja rectangular">↗</a></div></article>
+        <article class="product-card reveal" data-category="cocina"><div class="card-number">11</div><div class="product-visual"><img src="images/catalogo/papel-film.png" alt="Rollo de papel film alimenticio" loading="lazy"></div><div class="card-copy"><small>COCINA</small><h3>Papel film</h3><p>Grado alimenticio · Medida 450 × 1400</p><div class="product-price"><span>Precio</span><strong>$45.00</strong></div><a href="#contacto" aria-label="Cotizar papel film">↗</a></div></article>
+        <article class="product-card reveal" data-category="cocina"><div class="card-number">12</div><div class="product-visual"><img src="images/catalogo/guantes.png" alt="Guantes desechables negros" loading="lazy"></div><div class="card-copy"><small>COCINA</small><h3>Guantes S, M y L</h3><p>Resistentes a temperaturas · Caja de 50 pares</p><div class="product-price"><span>Precio por caja</span><strong>$6.25</strong></div><a href="#contacto" aria-label="Cotizar guantes desechables">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">13</div><div class="product-visual"><img src="images/catalogo/vasos-salseros.png" alt="Vasos salseros con tapa" loading="lazy"></div><div class="card-copy"><small>ENVASES</small><h3>Vasos salseros ½ oz</h3><p>Con tapa · Bulto de 6000 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.021</strong></div><a href="#contacto" aria-label="Cotizar vasos salseros">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">14</div><div class="product-visual"><img src="images/catalogo/botella-500ml.png" alt="Botella plástica de 500 mililitros" loading="lazy"></div><div class="card-copy"><small>ENVASES</small><h3>Botella 500 ml</h3><p>Botella plástica con tapa · Bulto de 150</p><div class="product-price"><span>Precio unitario</span><strong>$0.13</strong></div><a href="#contacto" aria-label="Cotizar botella de 500 mililitros">↗</a></div></article>
+        <article class="product-card reveal" data-category="desechables"><div class="card-number">15</div><div class="product-visual"><img src="images/catalogo/plato-redondo.png" alt="Plato redondo desechable número 7" loading="lazy"></div><div class="card-copy"><small>DESECHABLES</small><h3>Plato redondo #7</h3><p>Plato desechable · Bulto de 1000 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.31</strong></div><a href="#contacto" aria-label="Cotizar plato redondo">↗</a></div></article>
+        <article class="product-card reveal" data-category="desechables"><div class="card-number">16</div><div class="product-visual"><img src="images/catalogo/cuchara-sopera.png" alt="Cuchara sopera blanca" loading="lazy"></div><div class="card-copy"><small>DESECHABLES</small><h3>Cuchara sopera</h3><p>Resistente, color blanco · Bulto de 7000</p><div class="product-price"><span>Precio unitario</span><strong>$0.014</strong></div><a href="#contacto" aria-label="Cotizar cuchara sopera">↗</a></div></article>
+        <article class="product-card reveal" data-category="fundas"><div class="card-number">17</div><div class="product-visual"><img src="images/catalogo/fundas-rollo.png" alt="Fundas plásticas en rollo" loading="lazy"></div><div class="card-copy"><small>FUNDAS</small><h3>Fundas de rollo 2 kg</h3><p>Medidas disponibles: 9 × 14 y 12 × 18</p><div class="product-price"><span>Precio</span><strong>$6.00</strong></div><a href="#contacto" aria-label="Cotizar fundas de rollo">↗</a></div></article>
+        <article class="product-card reveal" data-category="fundas"><div class="card-number">18</div><div class="product-visual"><img src="images/catalogo/funda-basura-30x36.png" alt="Funda de basura industrial 30 por 36" loading="lazy"></div><div class="card-copy"><small>FUNDAS</small><h3>Funda de basura 30 × 36</h3><p>Industrial resistente · Bulto de 1000 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.08</strong></div><a href="#contacto" aria-label="Cotizar fundas de basura de 30 por 36">↗</a></div></article>
+        <article class="product-card reveal" data-category="cocina"><div class="card-number">19</div><div class="product-visual"><img src="images/catalogo/cofias-blancas.png" alt="Cofias blancas desechables" loading="lazy"></div><div class="card-copy"><small>HIGIENE</small><h3>Cofias blancas</h3><p>Protección para el cabello · Bulto de 100</p><div class="product-price"><span>Precio</span><strong>$5.00</strong></div><a href="#contacto" aria-label="Cotizar cofias blancas">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">20</div><div class="product-visual"><img src="images/catalogo/vaso-gelatinero.png" alt="Vaso gelatinero con tapa" loading="lazy"></div><div class="card-copy"><small>ENVASES</small><h3>Vaso gelatinero</h3><p>Material resistente con tapa · Bulto de 2500</p><div class="product-price"><span>Precio unitario</span><strong>$0.106</strong></div><a href="#contacto" aria-label="Cotizar vaso gelatinero">↗</a></div></article>
+        <article class="product-card reveal" data-category="fundas"><div class="card-number">21</div><div class="product-visual"><img src="images/catalogo/fundas-camiseta.png" alt="Fundas camiseta blancas" loading="lazy"></div><div class="card-copy"><small>FUNDAS</small><h3>Fundas camiseta</h3><p>Color blanco, tamaños 4, 5 y 6 · Bulto de 1000</p><div class="product-price"><span>Precio unitario</span><strong>$0.067</strong></div><a href="#contacto" aria-label="Cotizar fundas camiseta">↗</a></div></article>
+        <article class="product-card reveal" data-category="fundas"><div class="card-number">22</div><div class="product-visual"><img src="images/catalogo/fundas-cucharas.png" alt="Fundas para cucharas" loading="lazy"></div><div class="card-copy"><small>FUNDAS</small><h3>Fundas para cucharas</h3><p>Polifan con cierre pega y despega</p><div class="product-price"><span>Precio indicado</span><strong>$0.012</strong></div><a href="#contacto" aria-label="Cotizar fundas para cucharas">↗</a></div></article>
+        <article class="product-card reveal" data-category="desechables"><div class="card-number">23</div><div class="product-visual"><img src="images/catalogo/vasos-shot.png" alt="Vasos de shot cristal" loading="lazy"></div><div class="card-copy"><small>DESECHABLES</small><h3>Vasos de shot 2 oz</h3><p>Vaso cristal resistente · Bulto de 2880</p><div class="product-price"><span>Precio unitario</span><strong>$0.52</strong></div><a href="#contacto" aria-label="Cotizar vasos de shot">↗</a></div></article>
+        <article class="product-card reveal" data-category="fundas"><div class="card-number">24</div><div class="product-visual"><img src="images/catalogo/funda-basura-23x28.png" alt="Funda de basura 23 por 28" loading="lazy"></div><div class="card-copy"><small>FUNDAS</small><h3>Funda de basura 23 × 28</h3><p>Funda resistente · Bulto de 1000 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.07</strong></div><a href="#contacto" aria-label="Cotizar fundas de basura de 23 por 28">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">25</div><div class="product-visual"><img src="images/catalogo/contenedor-deli.png" alt="Contenedor deli de un litro" loading="lazy"></div><div class="card-copy"><small>ENVASES</small><h3>Contenedor deli 1 litro</h3><p>Con tapa · Bulto de 800 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.12</strong></div><a href="#contacto" aria-label="Cotizar contenedor deli">↗</a></div></article>
+        <article class="product-card reveal" data-category="fundas"><div class="card-number">26</div><div class="product-visual"><img src="images/catalogo/funda-zipper.png" alt="Funda zipper 14 por 10" loading="lazy"></div><div class="card-copy"><small>FUNDAS</small><h3>Funda zipper 14 × 10</h3><p>Cierre hermético · Bulto de 5000 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.03</strong></div><a href="#contacto" aria-label="Cotizar fundas zipper">↗</a></div></article>
+        <article class="product-card reveal" data-category="desechables"><div class="card-number">27</div><div class="product-visual"><img src="images/catalogo/vasos-plasticos.png" alt="Vasos plásticos número 7" loading="lazy"></div><div class="card-copy"><small>DESECHABLES</small><h3>Vasos plásticos #7</h3><p>Vasos blancos de uso general</p><div class="product-price"><span>Precio</span><strong>$0.02</strong></div><a href="#contacto" aria-label="Cotizar vasos plásticos número 7">↗</a></div></article>
+        <article class="product-card reveal" data-category="envases"><div class="card-number">28</div><div class="product-visual"><img src="images/catalogo/vaso-gelatinero-2.png" alt="Vaso gelatinero con tapa" loading="lazy"></div><div class="card-copy"><small>ENVASES</small><h3>Vaso gelatinero con tapa</h3><p>Material resistente · Bulto de 2500 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.106</strong></div><a href="#contacto" aria-label="Cotizar vaso gelatinero con tapa">↗</a></div></article>
+        <article class="product-card reveal" data-category="fundas"><div class="card-number">29</div><div class="product-visual"><img src="images/catalogo/funda-natural.png" alt="Funda natural Rhino 6 por 8" loading="lazy"></div><div class="card-copy"><small>FUNDAS</small><h3>Funda natural Rhino 6 × 8</h3><p>Funda natural · Bulto de 35 000 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.004</strong></div><a href="#contacto" aria-label="Cotizar funda natural Rhino">↗</a></div></article>
       </div>
     </section>
 
     <section class="about section" id="nosotros">
-      <div class="about-copy reveal"><span class="kicker light">POR QUÉ MACONPLAST</span><h2>Más que plástico,<br><em>una alianza.</em></h2><p>Entendemos que detrás de cada pedido hay una operación que no puede detenerse. Por eso combinamos experiencia, inventario y servicio para darte respuestas claras.</p><a class="btn btn-light" href="#contacto">Conócenos <span>↗</span></a></div>
+      <div class="about-copy reveal"><span class="kicker light">POR QUÉ MACONTA PLAST</span><h2>Más que plástico,<br><em>una alianza.</em></h2><p>Entendemos que detrás de cada pedido hay una operación que no puede detenerse. Por eso combinamos experiencia, inventario y servicio para darte respuestas claras.</p><a class="btn btn-light" href="#contacto">Conócenos <span>↗</span></a></div>
       <div class="stats reveal">
         <div><strong data-count="12">0</strong><sup>+</sup><span>Años de experiencia</span></div>
         <div><strong data-count="250">0</strong><sup>+</sup><span>Clientes atendidos</span></div>
@@ -89,16 +112,43 @@
     <section class="quote section" id="contacto">
       <div class="quote-intro reveal"><span class="kicker">HABLEMOS</span><h2>Tu próximo proyecto<br><em>empieza aquí.</em></h2><p>Cuéntanos qué necesitas. Nuestro equipo te responderá con una solución y cotización personalizada.</p><div class="contact-row"><span>✉</span><div><small>ESCRÍBENOS</small><a href="mailto:ventas@maconplast.com">ventas@maconplast.com</a></div></div><div class="contact-row"><span>⌕</span><div><small>VISÍTANOS</small><p>Atención a nivel nacional</p></div></div></div>
       <form class="quote-form reveal">
-        <div class="field"><label for="name">Nombre / Empresa</label><input id="name" name="name" placeholder="¿Cómo te llamamos?" required></div>
-        <div class="field split"><div><label for="email">Correo</label><input type="email" id="email" name="email" placeholder="tu@empresa.com" required></div><div><label for="phone">Teléfono</label><input type="tel" id="phone" name="phone" placeholder="+593 000 000 000"></div></div>
-        <div class="field"><label for="product">Producto de interés</label><select id="product" name="product" required><option value="">Selecciona una opción</option><option>Resinas plásticas</option><option>Envases y bidones</option><option>Películas y rollos</option><option>Otro producto</option></select></div>
+        <div class="field"><label for="name">Nombre / Empresa</label><input id="name" name="name" autocomplete="organization" placeholder="¿Cómo te llamamos?" required></div>
+        <div class="field split"><div><label for="email">Correo</label><input type="email" id="email" name="email" autocomplete="email" placeholder="tu@empresa.com" required></div><div><label for="phone">Teléfono</label><input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+593 000 000 000"></div></div>
+        <div class="field"><label for="product">Producto de interés</label><select id="product" name="product" required><option value="">Selecciona una opción</option><option>Envases y contenedores</option><option>Productos desechables</option><option>Fundas plásticas</option><option>Insumos de cocina e higiene</option><option>Otro producto</option></select></div>
         <div class="field"><label for="message">Cuéntanos más</label><textarea id="message" name="message" rows="3" placeholder="Cantidad, medidas o uso del producto..."></textarea></div>
-        <button class="btn submit" type="submit">Solicitar cotización <span>↗</span></button><p class="form-status" role="status"></p>
+        <button class="btn submit" type="submit">Solicitar cotización <span>↗</span></button><p class="form-status" role="status" aria-live="polite"></p>
       </form>
     </section>
   </main>
 
-  <footer><a class="brand brand-footer" href="#inicio"><span class="brand-mark">M</span><span>Macon<span>PLast</span></span></a><p>Soluciones plásticas que hacen avanzar tu negocio.</p><div><a href="#productos">Productos</a><a href="#nosotros">Nosotros</a><a href="#contacto">Contacto</a></div><small>© 2026 MaconPLast. Todos los derechos reservados.</small></footer>
-  <script src="assets/js/main.js"></script>
+  <footer class="site-footer">
+    <div class="footer-main">
+      <div class="footer-brand"><a class="brand brand-footer" href="#inicio" aria-label="Maconta Plast, inicio"><img class="brand-logo" src="images/catalogo/maconta-plast-logo-cropped.png" alt="Maconta Plast"></a><p id="footer-text">Soluciones plásticas que hacen avanzar tu negocio.</p><a class="footer-whatsapp" id="footer-whatsapp" href="#" target="_blank" rel="noopener">Escríbenos por WhatsApp →</a></div>
+      <div class="footer-column"><strong>Explora</strong><a href="#inicio">Inicio</a><a href="#productos">Productos</a><a href="#nosotros">Nosotros</a><a href="#contacto">Contacto</a></div>
+      <div class="footer-column"><strong>Productos</strong><a href="#productos" data-footer-filter="envases">Envases</a><a href="#productos" data-footer-filter="desechables">Desechables</a><a href="#productos" data-footer-filter="fundas">Fundas</a><a href="#productos" data-footer-filter="cocina">Cocina e higiene</a></div>
+      <div class="footer-column footer-contact"><strong>Contacto</strong><a id="footer-email" href="mailto:ventas@maconplast.com">ventas@maconplast.com</a><span id="footer-address">Atención a nivel nacional</span><span id="footer-hours">Lunes a viernes · 08:00–17:00</span></div>
+    </div>
+    <div class="footer-bottom"><small>© 2026 Maconta Plast. Todos los derechos reservados.</small><a href="/admin.html" rel="nofollow">Administración</a></div>
+  </footer>
+
+  <div class="cart-overlay" id="cart-overlay" hidden></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-hidden="true" aria-labelledby="cart-title">
+    <div class="cart-head"><div><span>TU PEDIDO</span><h2 id="cart-title">Carrito de compra</h2></div><button id="cart-close" type="button" aria-label="Cerrar carrito">×</button></div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-empty" id="cart-empty"><span>🛍</span><strong>Tu carrito está vacío</strong><p>Agrega productos desde nuestro catálogo.</p></div>
+    <div class="cart-footer"><div><span>Total estimado</span><strong id="cart-total">$0.00</strong></div><button class="btn" id="checkout-open" type="button">Continuar pedido <span>→</span></button><small>Confirmaremos disponibilidad y entrega contigo.</small></div>
+  </aside>
+
+  <dialog class="checkout-dialog" id="checkout-dialog">
+    <form id="checkout-form">
+      <div class="checkout-head"><div><span>FINALIZAR</span><h2>Datos del pedido</h2></div><button type="button" id="checkout-close" aria-label="Cerrar">×</button></div>
+      <div class="checkout-grid"><label>Nombre / Empresa<input name="customer_name" autocomplete="name" required></label><label>WhatsApp / Teléfono<input name="phone" type="tel" autocomplete="tel" required></label><label>Correo<input name="email" type="email" autocomplete="email"></label><label>Dirección de entrega<input name="address" autocomplete="street-address"></label><label class="wide">Notas del pedido<textarea name="notes" rows="3" placeholder="Horario, referencia o indicaciones…"></textarea></label></div>
+      <div class="checkout-total"><span>Total estimado</span><strong id="checkout-total">$0.00</strong></div>
+      <button class="btn" type="submit">Enviar pedido <span>→</span></button><p class="checkout-status" role="status" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+  <a class="whatsapp-widget" id="whatsapp-widget" href="#" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp"><span>◔</span><strong>WhatsApp</strong></a>
+  <script src="main.js"></script>
 </body>
 </html>
