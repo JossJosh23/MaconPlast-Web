@@ -12,18 +12,20 @@
   <title>Maconta Plast | Soluciones que toman forma</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="image" href="images/hero/maconplast-hero-v3.png" fetchpriority="high">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <script>document.documentElement.dataset.theme=localStorage.getItem('maconta_theme')||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');</script>
-  <link rel="stylesheet" href="assets/css/store.css?v=20260830-5">
+  <link rel="stylesheet" href="assets/css/store.css?v=20260830-13">
 </head>
 <body>
+  <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
   <header class="header">
     <a class="brand" href="#inicio" aria-label="Maconta Plast, inicio">
-      <img class="brand-logo" src="images/catalogo/maconta-plast-logo-cropped.png" alt="Maconta Plast">
+      <img class="brand-logo" src="images/catalogo/maconta-plast-logo-cropped.png" width="443" height="163" alt="Maconta Plast" decoding="async">
     </a>
     <button class="menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="main-nav"><span></span><span></span></button>
     <nav class="nav" id="main-nav" aria-label="Navegación principal">
-      <a class="active" href="#inicio"><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</a>
+      <a class="active" href="#inicio" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</a>
       <a href="#productos"><span class="nav-icon" aria-hidden="true">▦</span>Productos</a>
       <a href="#nosotros"><span class="nav-icon" aria-hidden="true">♧</span>Nosotros</a>
       <a href="#contacto"><span class="nav-icon" aria-hidden="true">✉</span>Cotizar</a>
@@ -33,9 +35,9 @@
     <a class="btn btn-small header-cta" id="header-quote" href="#contacto">Cotizar <span>→</span></a>
   </header>
 
-  <main>
+  <main id="contenido" tabindex="-1">
     <section class="hero" id="inicio">
-      <img class="hero-image" src="images/hero/maconplast-hero-v3.png" alt="Tarrina térmica, contenedor de tres compartimientos, botella vacía, film alimenticio y fundas zipper de Maconta Plast">
+      <img class="hero-image" src="images/hero/maconplast-hero-v3.png" width="1536" height="1024" alt="Tarrina térmica, contenedor de tres compartimientos, botella vacía, film alimenticio y fundas zipper de Maconta Plast" fetchpriority="high" decoding="async">
       <div class="hero-shade"></div>
       <div class="hero-content reveal">
         <div class="eyebrow"><span></span> Plástico que impulsa industrias</div>
@@ -61,6 +63,10 @@
         <div><span class="kicker">CATÁLOGO COMPLETO</span><h2>Todo lo que necesitas,<br><em>en un solo lugar.</em></h2></div>
         <p>Explora nuestros <strong id="catalog-count">29</strong> productos para alimentos, cocina, comercio y limpieza. Consulta presentaciones, disponibilidad y precios actualizados.</p>
       </div>
+      <div class="catalog-tools">
+        <label class="product-search" for="product-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="product-search" type="search" placeholder="Buscar tarrinas, fundas, botellas…" autocomplete="off"><button id="clear-product-search" type="button" aria-label="Limpiar búsqueda" hidden>×</button></label>
+        <span class="search-results" id="search-results" aria-live="polite">29 productos</span>
+      </div>
       <div class="filters" role="group" aria-label="Filtrar productos">
         <button class="filter active" type="button" data-filter="all" aria-pressed="true">Todos</button>
         <button class="filter" type="button" data-filter="envases" aria-pressed="false">Envases</button>
@@ -68,6 +74,7 @@
         <button class="filter" type="button" data-filter="fundas" aria-pressed="false">Fundas</button>
         <button class="filter" type="button" data-filter="cocina" aria-pressed="false">Cocina</button>
       </div>
+      <div class="catalog-feedback" id="catalog-feedback" role="alert" hidden><span class="catalog-feedback-icon" aria-hidden="true">!</span><div><strong>No pudimos actualizar el catálogo</strong><p>Mostramos la información disponible. Comprueba tu conexión e inténtalo nuevamente.</p></div><button type="button" id="retry-catalog">Reintentar</button></div>
       <div class="product-grid catalog-grid">
         <article class="product-card reveal" data-category="envases"><div class="card-number">01</div><div class="product-visual"><img src="images/catalogo/tarrina-28oz.png" alt="Tarrina térmica de 28 onzas" loading="lazy"></div><div class="card-copy"><small>ENVASES TÉRMICOS</small><h3>Tarrina térmica 28 oz</h3><p>Con tapa plástica · Bulto de 250 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.14</strong></div><a href="#contacto" aria-label="Cotizar tarrina térmica de 28 onzas">↗</a></div></article>
         <article class="product-card reveal" data-category="envases"><div class="card-number">02</div><div class="product-visual"><img src="images/catalogo/tarrina-medio-litro.png" alt="Tarrina térmica de medio litro" loading="lazy"></div><div class="card-copy"><small>ENVASES TÉRMICOS</small><h3>Tarrina térmica ½ litro</h3><p>Con tapa plástica · Bulto de 500 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.11</strong></div><a href="#contacto" aria-label="Cotizar tarrina térmica de medio litro">↗</a></div></article>
@@ -99,6 +106,7 @@
         <article class="product-card reveal" data-category="envases"><div class="card-number">28</div><div class="product-visual"><img src="images/catalogo/vaso-gelatinero-2.png" alt="Vaso gelatinero con tapa" loading="lazy"></div><div class="card-copy"><small>ENVASES</small><h3>Vaso gelatinero con tapa</h3><p>Material resistente · Bulto de 2500 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.106</strong></div><a href="#contacto" aria-label="Cotizar vaso gelatinero con tapa">↗</a></div></article>
         <article class="product-card reveal" data-category="fundas"><div class="card-number">29</div><div class="product-visual"><img src="images/catalogo/funda-natural.png" alt="Funda natural Rhino 6 por 8" loading="lazy"></div><div class="card-copy"><small>FUNDAS</small><h3>Funda natural Rhino 6 × 8</h3><p>Funda natural · Bulto de 35 000 unidades</p><div class="product-price"><span>Precio unitario</span><strong>$0.004</strong></div><a href="#contacto" aria-label="Cotizar funda natural Rhino">↗</a></div></article>
       </div>
+      <div class="catalog-empty" id="catalog-empty" hidden><span>⌕</span><h3>No encontramos ese producto</h3><p>Prueba con otro nombre o selecciona una categoría diferente.</p><button type="button" id="reset-product-search">Ver todos los productos</button></div>
     </section>
 
     <section class="about section" id="nosotros">
@@ -135,7 +143,7 @@
   </footer>
 
   <div class="cart-overlay" id="cart-overlay" hidden></div>
-  <aside class="cart-drawer" id="cart-drawer" aria-hidden="true" aria-labelledby="cart-title">
+  <aside class="cart-drawer" id="cart-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="cart-title" tabindex="-1">
     <div class="cart-head"><div><span>TU PEDIDO</span><h2 id="cart-title">Carrito de compra</h2></div><button id="cart-close" type="button" aria-label="Cerrar carrito">×</button></div>
     <div class="cart-items" id="cart-items"></div>
     <div class="cart-empty" id="cart-empty"><span>🛍</span><strong>Tu carrito está vacío</strong><p>Agrega productos desde nuestro catálogo.</p></div>
@@ -151,7 +159,12 @@
     </form>
   </dialog>
 
+  <dialog class="product-dialog" id="product-dialog" aria-labelledby="product-detail-name">
+    <button class="product-dialog-close" id="product-dialog-close" type="button" aria-label="Cerrar detalles">×</button>
+    <div class="product-dialog-layout"><div class="product-detail-visual"><img id="product-detail-image" src="" alt=""><span id="product-detail-status"></span></div><div class="product-detail-copy"><span class="product-detail-category" id="product-detail-category"></span><h2 id="product-detail-name"></h2><p id="product-detail-description"></p><div class="product-detail-specs" id="product-detail-specs"></div><div class="product-detail-buy"><div><small id="product-detail-price-label">Precio</small><strong id="product-detail-price"></strong></div><button class="btn" id="product-detail-add" type="button">Agregar al carrito <span>＋</span></button></div></div></div>
+  </dialog>
+
   <a class="whatsapp-widget" id="whatsapp-widget" href="#" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp"><span aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16.04 3.2A12.7 12.7 0 0 0 5.08 22.3L3.2 29.17l7.03-1.84a12.7 12.7 0 1 0 5.81-24.13Zm0 23.25c-1.9 0-3.76-.51-5.38-1.47l-.39-.23-4.17 1.09 1.11-4.06-.25-.42a10.54 10.54 0 1 1 9.08 5.09Z"/><path d="M21.82 18.54c-.32-.16-1.87-.92-2.16-1.03-.29-.11-.5-.16-.71.16-.21.32-.82 1.03-1 1.24-.19.21-.37.24-.69.08-.32-.16-1.34-.49-2.55-1.58a9.5 9.5 0 0 1-1.77-2.2c-.18-.32-.02-.49.14-.65.14-.14.32-.37.47-.55.16-.19.21-.32.32-.53.1-.21.05-.4-.03-.55-.08-.16-.71-1.71-.97-2.35-.26-.61-.52-.53-.71-.54h-.61c-.21 0-.55.08-.84.4-.29.32-1.11 1.08-1.11 2.64s1.13 3.06 1.29 3.27c.16.21 2.23 3.4 5.4 4.77.75.32 1.34.52 1.8.67.76.24 1.44.21 1.99.13.61-.09 1.87-.77 2.14-1.51.26-.74.26-1.37.18-1.51-.08-.13-.29-.21-.61-.37Z"/></svg></span><strong>WhatsApp</strong></a>
-  <script src="assets/js/store.js?v=20260830-5"></script>
+  <script src="assets/js/store.js?v=20260830-12"></script>
 </body>
 </html>

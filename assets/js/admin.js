@@ -397,11 +397,6 @@ $('#password-form').addEventListener('submit', async (event) => {
     await showAdmin(session);
   } catch {
     const status = await api('/api/auth/status');
-    if (status.setupRequired) {
-      try {
-        await api('/api/auth/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'admin1', password: 'admin1' }) });
-      } catch (error) { console.warn(error.message); }
-    }
-    showAuth(false);
+    showAuth(status.setupRequired);
   }
 })();

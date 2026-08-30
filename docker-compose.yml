@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-maconta}
       POSTGRES_USER: ${POSTGRES_USER:-maconta}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-clave-de-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -27,9 +27,9 @@ services:
       PGPORT: 5432
       PGDATABASE: ${POSTGRES_DB:-maconta}
       PGUSER: ${POSTGRES_USER:-maconta}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-clave-de-postgres}
-      ADMIN_USER: ${ADMIN_USER:-admin1}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin1}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
+      ADMIN_USER: ${ADMIN_USER:?Define ADMIN_USER}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Define ADMIN_PASSWORD}
     expose:
       - "3000"
     volumes:

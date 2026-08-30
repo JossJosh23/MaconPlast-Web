@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const crypto = require('node:crypto');
 const express = require('express');
 const helmet = require('helmet');
+const compression = require('compression');
 const multer = require('multer');
 const { rateLimit } = require('express-rate-limit');
 const { Pool } = require('pg');
@@ -79,8 +80,12 @@ function verifyPassword(password, stored) {
 }
 
 function cookieToken(request) {
-  const entries = (request.headers.cookie || '').split(';').map((part) => part.trim().split('=').map(decodeURIComponent)).filter((part) => part.length === 2);
-  return Object.fromEntries(entries).maconta_session || '';
+  for (const entry of (request.headers.cookie || '').split(';')) {
+    const separator = entry.indexOf('=');
+    if (separator < 0 || entry.slice(0, separator).trim() !== 'maconta_session') continue;
+    try { return decodeURIComponent(entry.slice(separator + 1).trim()); } catch { return ''; }
+  }
+  return '';
 }
 
 function mapProduct(row) {
@@ -222,9 +227,12 @@ async function initializeDatabase() {
 
   const adminCount = Number((await pool.query('SELECT COUNT(*) AS total FROM admins')).rows[0].total);
   if (!adminCount) {
-    const user = String(process.env.ADMIN_USER || 'admin1').toLowerCase();
-    const password = String(process.env.ADMIN_PASSWORD || 'admin1');
-    await pool.query('INSERT INTO admins (email,password_hash) VALUES ($1,$2)', [user, hashPassword(password)]);
+    const user = String(process.env.ADMIN_USER || '').trim().toLowerCase();
+    const password = String(process.env.ADMIN_PASSWORD || '');
+    if (user && password) {
+      if (process.env.NODE_ENV === 'production' && (user === 'admin1' || password === 'admin1' || password.length < 10)) throw new Error('Configura ADMIN_USER y una ADMIN_PASSWORD segura de al menos 10 caracteres.');
+      await pool.query('INSERT INTO admins (email,password_hash) VALUES ($1,$2)', [user, hashPassword(password)]);
+    }
   }
 
   const productCount = Number((await pool.query('SELECT COUNT(*) AS total FROM products')).rows[0].total);
@@ -262,6 +270,7 @@ async function initializeDatabase() {
 }
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false }));
+app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -317,6 +326,7 @@ app.get('/api/health', async (_request, response) => {
 });
 
 app.get('/api/store', async (_request, response) => {
+  response.set('Cache-Control', 'no-store');
   const [categories, products, settings] = await Promise.all([
     pool.query('SELECT * FROM categories ORDER BY sort_order,name'),
     pool.query(`${productSelect} WHERE products.availability!='hidden' ORDER BY products.sort_order,products.id`),
@@ -342,8 +352,7 @@ app.post('/api/auth/setup', authLimiter, async (request, response) => {
   if (Number((await pool.query('SELECT COUNT(*) AS total FROM admins')).rows[0].total)) return response.status(409).json({ error: 'El administrador ya fue configurado.' });
   const email = String(request.body.email || '').trim().toLowerCase();
   const password = String(request.body.password || '');
-  const temporary = email === 'admin1' && password === 'admin1';
-  if (!temporary && (!/^\S+@\S+\.\S+$/.test(email) || password.length < 10)) return response.status(400).json({ error: 'Usa un correo válido y una contraseña de al menos 10 caracteres.' });
+  if (!/^\S+@\S+\.\S+$/.test(email) || password.length < 10) return response.status(400).json({ error: 'Usa un correo válido y una contraseña de al menos 10 caracteres.' });
   await pool.query('INSERT INTO admins (email,password_hash) VALUES ($1,$2)', [email, hashPassword(password)]);
   response.status(201).json({ message: 'Administrador creado.' });
 });
@@ -398,22 +407,31 @@ function productFields(request, existing = {}) {
   const saleEnd = request.body.sale_end ? new Date(request.body.sale_end) : null;
   return { name: String(request.body.name || '').trim(), categoryId: Number(request.body.category_id), label: String(request.body.label || '').trim(), description: String(request.body.description || '').trim(), price: Number(request.body.price), salePrice, saleStart: saleStart && !Number.isNaN(saleStart.valueOf()) ? saleStart.toISOString() : null, saleEnd: saleEnd && !Number.isNaN(saleEnd.valueOf()) ? saleEnd.toISOString() : null, taxStatus: ['taxable','none'].includes(request.body.tax_status) ? request.body.tax_status : 'taxable', taxClass: ['standard','zero','exempt'].includes(request.body.tax_class) ? request.body.tax_class : 'standard', showPrice: request.body.show_price === 'true' || request.body.show_price === 'on', image: request.file ? `images/uploads/${request.file.filename}` : String(request.body.image || existing.image || ''), alt: String(request.body.alt || request.body.name || '').trim(), stock: Math.max(0, Number.parseInt(request.body.stock, 10) || 0), minStock: Math.max(0, Number.parseInt(request.body.min_stock, 10) || 0), trackInventory: request.body.track_inventory === 'true' || request.body.track_inventory === 'on', availability: ['available', 'out_of_stock', 'hidden'].includes(request.body.availability) ? request.body.availability : 'available', sortOrder: Number.parseInt(request.body.sort_order, 10) || 0 };
 }
+function validateProduct(product) {
+  if (!product.name || !product.categoryId || !Number.isFinite(product.price) || product.price < 0) return 'Completa nombre, categoría y precio.';
+  if (product.salePrice !== null && (!Number.isFinite(product.salePrice) || product.salePrice < 0 || product.salePrice >= product.price)) return 'El precio rebajado debe ser menor que el precio normal.';
+  if (product.saleStart && product.saleEnd && product.saleEnd <= product.saleStart) return 'La fecha final de la oferta debe ser posterior al inicio.';
+  return '';
+}
+async function deleteUploadedImage(imagePath) {
+  if (!String(imagePath || '').startsWith('images/uploads/')) return;
+  const target = path.resolve(root, imagePath);
+  if (path.dirname(target) !== path.resolve(uploadDir)) return;
+  try { await fs.promises.unlink(target); } catch (error) { if (error.code !== 'ENOENT') console.warn(`No se pudo eliminar la imagen ${target}:`,error.message); }
+}
 app.post('/api/admin/products', requireAdmin, upload.single('image_file'), async (request, response) => {
-  const p = productFields(request); if (!p.name || !p.categoryId || !Number.isFinite(p.price) || p.price < 0) return response.status(400).json({ error: 'Completa nombre, categoría y precio.' });
-  if (p.salePrice !== null && (!Number.isFinite(p.salePrice) || p.salePrice < 0 || p.salePrice >= p.price)) return response.status(400).json({ error: 'El precio rebajado debe ser menor que el precio normal.' });
-  if (p.saleStart && p.saleEnd && p.saleEnd <= p.saleStart) return response.status(400).json({ error: 'La fecha final de la oferta debe ser posterior al inicio.' });
+  const p = productFields(request); const validation = validateProduct(p); if (validation) { if (request.file) await deleteUploadedImage(`images/uploads/${request.file.filename}`); return response.status(400).json({ error: validation }); }
   const row = (await pool.query(`INSERT INTO products (name,category_id,label,description,price,sale_price,sale_start,sale_end,tax_status,tax_class,show_price,image,alt,stock,min_stock,track_inventory,availability,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id`, [p.name,p.categoryId,p.label,p.description,p.price,p.salePrice,p.saleStart,p.saleEnd,p.taxStatus,p.taxClass,p.showPrice,p.image,p.alt,p.stock,p.minStock,p.trackInventory,p.availability,p.sortOrder])).rows[0];
   if (p.trackInventory && p.stock > 0) await pool.query("INSERT INTO inventory_movements (product_id,admin_id,movement_type,quantity_change,stock_before,stock_after,reason,notes) VALUES ($1,$2,'entry',$3,0,$3,'correction','Stock inicial')", [row.id,request.admin.id,p.stock]);
   response.status(201).json({ id: Number(row.id) });
 });
 app.put('/api/admin/products/:id', requireAdmin, upload.single('image_file'), async (request, response) => {
-  const existing = (await pool.query('SELECT * FROM products WHERE id=$1', [request.params.id])).rows[0]; if (!existing) return response.status(404).json({ error: 'Producto no encontrado.' });
-  const p = productFields(request, existing); if (!p.name || !p.categoryId || !Number.isFinite(p.price) || p.price < 0) return response.status(400).json({ error: 'Completa nombre, categoría y precio.' });
-  if (p.salePrice !== null && (!Number.isFinite(p.salePrice) || p.salePrice < 0 || p.salePrice >= p.price)) return response.status(400).json({ error: 'El precio rebajado debe ser menor que el precio normal.' });
-  if (p.saleStart && p.saleEnd && p.saleEnd <= p.saleStart) return response.status(400).json({ error: 'La fecha final de la oferta debe ser posterior al inicio.' });
+  const existing = (await pool.query('SELECT * FROM products WHERE id=$1', [request.params.id])).rows[0]; if (!existing) { if(request.file)await deleteUploadedImage(`images/uploads/${request.file.filename}`);return response.status(404).json({ error: 'Producto no encontrado.' }); }
+  const p = productFields(request, existing); const validation = validateProduct(p); if (validation) { if (request.file) await deleteUploadedImage(`images/uploads/${request.file.filename}`); return response.status(400).json({ error: validation }); }
   await pool.query(`UPDATE products SET name=$1,category_id=$2,label=$3,description=$4,price=$5,sale_price=$6,sale_start=$7,sale_end=$8,tax_status=$9,tax_class=$10,show_price=$11,image=$12,alt=$13,stock=$14,min_stock=$15,track_inventory=$16,availability=$17,sort_order=$18,updated_at=NOW() WHERE id=$19`, [p.name,p.categoryId,p.label,p.description,p.price,p.salePrice,p.saleStart,p.saleEnd,p.taxStatus,p.taxClass,p.showPrice,p.image,p.alt,p.stock,p.minStock,p.trackInventory,p.availability,p.sortOrder,request.params.id]);
   const previousStock = Number(existing.stock);
   if (p.trackInventory && p.stock !== previousStock) await pool.query("INSERT INTO inventory_movements (product_id,admin_id,movement_type,quantity_change,stock_before,stock_after,reason,notes) VALUES ($1,$2,'adjustment',$3,$4,$5,'correction','Cambio desde el editor de producto')", [request.params.id,request.admin.id,p.stock-previousStock,previousStock,p.stock]);
+  if (request.file && existing.image !== p.image) await deleteUploadedImage(existing.image);
   response.json({ message: 'Producto actualizado.' });
 });
 app.patch('/api/admin/products/:id/visibility', requireAdmin, async (request, response) => {
@@ -426,17 +444,19 @@ app.patch('/api/admin/products/:id/price-visibility', requireAdmin, async (reque
   if (!result.rowCount) return response.status(404).json({ error: 'Producto no encontrado.' });
   response.json({ show_price: result.rows[0].show_price });
 });
-app.delete('/api/admin/products/:id', requireAdmin, async (request, response) => { await pool.query('DELETE FROM products WHERE id=$1', [request.params.id]); response.status(204).end(); });
+app.delete('/api/admin/products/:id', requireAdmin, async (request, response) => { const product=(await pool.query('DELETE FROM products WHERE id=$1 RETURNING image',[request.params.id])).rows[0];if(!product)return response.status(404).json({error:'Producto no encontrado.'});await deleteUploadedImage(product.image);response.status(204).end(); });
 
 app.post('/api/orders', orderLimiter, async (request, response) => {
-  const customerName = String(request.body.customer_name || '').trim(); const phone = String(request.body.phone || '').trim(); const items = Array.isArray(request.body.items) ? request.body.items : [];
-  if (!customerName || phone.length < 7 || !items.length) return response.status(400).json({ error: 'Indica nombre, teléfono y productos.' });
+  const customerName = String(request.body.customer_name || '').trim().slice(0,160); const phone = String(request.body.phone || '').trim().slice(0,40); const items = Array.isArray(request.body.items) ? request.body.items : [];
+  if (!customerName || phone.length < 7 || !items.length || items.length > 100) return response.status(400).json({ error: 'Indica nombre, teléfono y una lista válida de productos.' });
+  const quantities = new Map();
+  for (const item of items) { const productId=Number(item.product_id),quantity=Number.parseInt(item.quantity,10);if(!Number.isSafeInteger(productId)||productId<=0||!Number.isSafeInteger(quantity)||quantity<=0||quantity>100000)return response.status(400).json({error:'La cantidad de un producto no es válida.'});quantities.set(productId,(quantities.get(productId)||0)+quantity); }
+  if ([...quantities.values()].some((quantity)=>quantity>100000)) return response.status(400).json({error:'La cantidad solicitada es demasiado alta.'});
   const client = await pool.connect();
   try {
     await client.query('BEGIN'); const normalized = [];
-    for (const item of items) {
-      const product = mapProduct((await client.query("SELECT * FROM products WHERE id=$1 AND availability='available' FOR UPDATE", [item.product_id])).rows[0]);
-      const quantity = Math.max(1, Number.parseInt(item.quantity, 10) || 1);
+    for (const [productId, quantity] of quantities) {
+      const product = mapProduct((await client.query("SELECT * FROM products WHERE id=$1 AND availability='available' FOR UPDATE", [productId])).rows[0]);
       if (!product) { const error = new Error('Uno de los productos ya no está disponible.'); error.status = 409; throw error; }
       if (product.track_inventory && quantity > product.stock) { const error = new Error(`Solo quedan ${product.stock} unidades de ${product.name}.`); error.status = 409; throw error; }
       const unitPrice = effectiveProductPrice(product);
@@ -538,8 +558,11 @@ app.get('/api/admin/settings', requireAdmin, async (_request,response)=>response
 app.put('/api/admin/settings', requireAdmin, async (request,response)=>{for(const key of Object.keys(defaults)){if(request.body[key]!==undefined)await pool.query('INSERT INTO settings (key,value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value',[key,String(request.body[key]).trim()]);}if(request.body.admin_email){const login=String(request.body.admin_email).trim().toLowerCase();if(login.length<3)return response.status(400).json({error:'Usuario administrativo no válido.'});try{await pool.query('UPDATE admins SET email=$1 WHERE id=$2',[login,request.admin.id]);}catch(error){if(error.code==='23505')return response.status(409).json({error:'Ese usuario ya existe.'});throw error;}}response.json({message:'Configuración guardada.'});});
 app.put('/api/admin/password', requireAdmin, authLimiter, async (request,response)=>{const admin=(await pool.query('SELECT * FROM admins WHERE id=$1',[request.admin.id])).rows[0];if(!verifyPassword(String(request.body.current_password||''),admin.password_hash))return response.status(401).json({error:'La contraseña actual no coincide.'});if(String(request.body.new_password||'').length<10)return response.status(400).json({error:'La nueva contraseña debe tener al menos 10 caracteres.'});await pool.query('UPDATE admins SET password_hash=$1 WHERE id=$2',[hashPassword(request.body.new_password),admin.id]);await pool.query('DELETE FROM sessions WHERE admin_id=$1 AND token_hash!=$2',[admin.id,request.sessionHash]);response.json({message:'Contraseña actualizada.'});});
 
-app.use(express.static(root,{extensions:['html']}));
-app.use((error,_request,response,_next)=>{console.error(error);if(error instanceof multer.MulterError)return response.status(400).json({error:'La imagen es demasiado grande o no es válida.'});if(error.code==='23503')return response.status(400).json({error:'La categoría seleccionada no existe.'});response.status(500).json({error:'Ocurrió un error inesperado.'});});
+app.use(express.static(root,{extensions:['html'],etag:true,maxAge:'7d',setHeaders(response,filePath){
+  if(filePath.endsWith('.html'))response.setHeader('Cache-Control','no-cache');
+  else response.setHeader('Cache-Control','public, max-age=604800');
+}}));
+app.use((error,request,response,_next)=>{console.error(error);if(request.file)deleteUploadedImage(`images/uploads/${request.file.filename}`);if(error instanceof multer.MulterError)return response.status(400).json({error:'La imagen es demasiado grande o no es válida.'});if(error.code==='23503')return response.status(400).json({error:'La categoría seleccionada no existe.'});response.status(500).json({error:'Ocurrió un error inesperado.'});});
 
 const port=Number(process.env.PORT)||3000;
 initializeDatabase().then(()=>app.listen(port,()=>console.log(`Maconta Plast con PostgreSQL disponible en http://localhost:${port}`))).catch((error)=>{console.error('No se pudo inicializar PostgreSQL:',error);process.exit(1);});

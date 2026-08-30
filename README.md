@@ -12,7 +12,6 @@ images/
   catalogo/       Fotografías y logo del catálogo
   hero/           Composiciones de portada
   uploads/        Imágenes subidas desde administración
-scripts/          Utilidades internas del proyecto
 admin.html        Panel administrativo
 index.html        Tienda pública
 server.js         API y servidor Node.js
@@ -48,7 +47,7 @@ Abre `http://localhost:3000`. El panel está en `http://localhost:3000/admin.htm
 - Configuración de WhatsApp, correo, dirección, horario, footer y acceso administrativo.
 - Interfaz mobile-first con áreas seguras de iOS, navegación táctil, diálogos adaptables y tarjetas administrativas.
 
-Las credenciales `admin1` / `admin1` son únicamente temporales. Cámbialas antes de abrir la web al público.
+En producción son obligatorias las variables `ADMIN_USER` y `ADMIN_PASSWORD`. El servidor rechaza credenciales predeterminadas o contraseñas de menos de 10 caracteres al crear una instalación nueva.
 
 ## Producción
 
