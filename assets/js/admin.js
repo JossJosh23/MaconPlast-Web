@@ -64,10 +64,12 @@ $('#auth-form').addEventListener('submit', async (event) => {
   } catch (error) { message(form, error.message); }
 });
 
-$('#logout').addEventListener('click', async () => {
+async function logout() {
   await api('/api/auth/logout', { method: 'POST' });
   showAuth(false);
-});
+}
+$('#logout').addEventListener('click', logout);
+$('#logout-mobile').addEventListener('click', logout);
 
 const titles = { dashboard: 'Resumen', products: 'Productos', categories: 'Categorías', orders: 'Ventas', quotes: 'Cotizaciones', settings: 'Configuración' };
 async function openView(name) {
@@ -108,7 +110,14 @@ function renderProducts() {
   const categoryId = Number($('#product-category-filter').value || 0);
   const products = state.products.filter((product) => (!search || `${product.name} ${product.description}`.toLowerCase().includes(search)) && (!categoryId || product.category_id === categoryId));
   const labels = { available: 'Disponible', out_of_stock: 'Agotado', hidden: 'Oculto' };
-  $('#products-table').innerHTML = products.map((product) => `<tr><td><div class="product-cell"><img src="/${escapeHtml(product.image || 'images/catalogo/maconta-plast-logo-cropped.png')}" alt=""><div><strong>${escapeHtml(product.name)}</strong><small>Orden ${product.sort_order}</small></div></div></td><td>${escapeHtml(product.category_name)}</td><td><strong>${money(product.price)}</strong></td><td>${product.stock || 'Sin control'}</td><td><span class="status ${product.availability}">${labels[product.availability]}</span></td><td><div class="actions"><button data-edit-product="${product.id}">Editar</button><button class="delete" data-delete-product="${product.id}">Eliminar</button></div></td></tr>`).join('') || '<tr><td colspan="6">No hay productos que coincidan.</td></tr>';
+  $('#products-table').innerHTML = products.map((product) => `<tr>
+    <td data-label="Producto"><div class="product-cell"><img src="/${escapeHtml(product.image || 'images/catalogo/maconta-plast-logo-cropped.png')}" alt=""><div><strong>${escapeHtml(product.name)}</strong><small>Orden ${product.sort_order}</small></div></div></td>
+    <td data-label="Categoría">${escapeHtml(product.category_name)}</td>
+    <td data-label="Precio"><strong>${money(product.price)}</strong></td>
+    <td data-label="Stock">${product.stock || 'Sin control'}</td>
+    <td data-label="Estado"><span class="status ${product.availability}">${labels[product.availability]}</span></td>
+    <td data-label="Acciones"><div class="actions"><button data-edit-product="${product.id}">Editar</button><button class="delete" data-delete-product="${product.id}">Eliminar</button></div></td>
+  </tr>`).join('') || '<tr><td colspan="6">No hay productos que coincidan.</td></tr>';
 }
 $('#product-search').addEventListener('input', renderProducts);
 $('#product-category-filter').addEventListener('change', renderProducts);

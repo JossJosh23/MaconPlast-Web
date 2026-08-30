@@ -1,40 +1,51 @@
 # Maconta Plast
 
-Tienda web responsiva con catálogo, carrito de compra, pedidos y panel administrativo privado.
+Aplicación web responsiva con catálogo, cotizaciones, carrito, pedidos y panel administrativo privado. Los datos se almacenan en PostgreSQL y las imágenes cargadas se conservan en un volumen persistente.
 
-## Iniciar el proyecto
+## Estructura
 
-Requiere Node.js 22.5 o posterior.
+```text
+assets/
+  css/            Estilos de tienda y administración
+  js/             Lógica del navegador
+images/
+  catalogo/       Fotografías y logo del catálogo
+  hero/           Composiciones de portada
+  uploads/        Imágenes subidas desde administración
+scripts/          Utilidades internas del proyecto
+admin.html        Panel administrativo
+index.html        Tienda pública
+server.js         API y servidor Node.js
+seed-products.json Catálogo inicial
+```
+
+Las carpetas `images/catalogo` e `images/uploads` mantienen rutas estables porque PostgreSQL guarda esas ubicaciones en los productos.
+
+## Inicio local
+
+Requiere Node.js 22.5 o posterior y PostgreSQL.
+
+1. Copia `.env.example` como `.env` y cambia sus contraseñas.
+2. Define `DATABASE_URL` o las variables estándar `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER` y `PGPASSWORD`.
+3. Ejecuta:
 
 ```bash
 npm install
 npm start
 ```
 
-Abre `http://localhost:3000`. El panel está disponible en `http://localhost:3000/admin.html`.
-
-## Acceso administrativo temporal
-
-- Usuario: `admin1`
-- Contraseña: `admin1`
-
-Estas credenciales son temporales. Cámbialas desde Configuración antes de publicar la web.
+Abre `http://localhost:3000`. El panel está en `http://localhost:3000/admin.html`.
 
 ## Funciones
 
-- Productos: crear, editar, eliminar, ordenar, cambiar precio, descripción, imagen, stock y disponibilidad.
-- Categorías: crear, renombrar, ordenar y eliminar categorías sin productos asociados.
-- Tienda: catálogo dinámico, filtros, carrito persistente y registro de pedidos.
-- Ventas: listado privado, detalle y estados pendiente, confirmado, completado o cancelado.
-- Cotizaciones: bandeja privada para solicitudes especiales con estados nueva, en revisión, respondida o descartada.
-- Configuración: WhatsApp, correo visible, dirección, horario, texto del footer y credenciales administrativas.
-- La sección de cotización puede activarse, desactivarse y editar su título y descripción desde el panel.
-- Imágenes nuevas: se almacenan en `images/uploads/`.
+- Catálogo dinámico con categorías, precios, filtros, inventario y disponibilidad.
+- Carrito persistente, pedidos y cotizaciones especiales.
+- Administración de productos, imágenes, categorías, ventas y solicitudes.
+- Configuración de WhatsApp, correo, dirección, horario, footer y acceso administrativo.
+- Interfaz mobile-first con áreas seguras de iOS, navegación táctil, diálogos adaptables y tarjetas administrativas.
 
-## Datos y copias de seguridad
+Las credenciales `admin1` / `admin1` son únicamente temporales. Cámbialas antes de abrir la web al público.
 
-La aplicación crea `data/maconta.db` automáticamente. Para respaldar la tienda, detén el servidor y guarda una copia de ese archivo junto con `images/uploads/`.
+## Producción
 
-Para producción utiliza HTTPS, define `NODE_ENV=production`, conserva copias de seguridad y ejecuta Node detrás de un proxy como Nginx, Cloudflare o el servicio de hosting elegido.
-
-Consulta [DEPLOYMENT.md](DEPLOYMENT.md) para desplegar con Dokploy o Hostinger sin perder la base de datos ni las imágenes.
+Consulta [DEPLOYMENT.md](DEPLOYMENT.md) para desplegar la aplicación y PostgreSQL en Dokploy. Debes respaldar tanto la base PostgreSQL como el volumen `images/uploads`.

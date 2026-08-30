@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="assets/css/store.css">
 </head>
 <body>
   <header class="header">
@@ -25,15 +25,15 @@
       <a class="active" href="#inicio"><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</a>
       <a href="#productos"><span class="nav-icon" aria-hidden="true">▦</span>Productos</a>
       <a href="#nosotros"><span class="nav-icon" aria-hidden="true">♧</span>Nosotros</a>
-      <a href="#contacto"><span class="nav-icon" aria-hidden="true">✉</span>Contacto</a>
+      <a href="#contacto"><span class="nav-icon" aria-hidden="true">✉</span>Cotizar</a>
     </nav>
     <button class="cart-trigger" id="cart-open" type="button" aria-label="Abrir carrito"><span aria-hidden="true">🛒</span><strong id="cart-count">0</strong></button>
-    <button class="btn btn-small header-cta" id="header-order" type="button">Hacer pedido <span>→</span></button>
+    <a class="btn btn-small header-cta" id="header-quote" href="#contacto">Cotizar <span>→</span></a>
   </header>
 
   <main>
     <section class="hero" id="inicio">
-      <img class="hero-image" src="maconplast-hero-v3.png" alt="Tarrina térmica, contenedor de tres compartimientos, botella vacía, film alimenticio y fundas zipper de Maconta Plast">
+      <img class="hero-image" src="images/hero/maconplast-hero-v3.png" alt="Tarrina térmica, contenedor de tres compartimientos, botella vacía, film alimenticio y fundas zipper de Maconta Plast">
       <div class="hero-shade"></div>
       <div class="hero-content reveal">
         <div class="eyebrow"><span></span> Plástico que impulsa industrias</div>
@@ -149,6 +149,6 @@
   </dialog>
 
   <a class="whatsapp-widget" id="whatsapp-widget" href="#" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp"><span>◔</span><strong>WhatsApp</strong></a>
-  <script src="main.js"></script>
+  <script src="assets/js/store.js"></script>
 </body>
 </html>

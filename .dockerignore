@@ -4,5 +4,5 @@ npm-debug.log*
 .gitignore
 data/*.db*
 .env
-maconplast-hero.png
-maconplast-hero-v2.png
+images/hero/maconplast-hero.png
+images/hero/maconplast-hero-v2.png

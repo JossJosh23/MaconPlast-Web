@@ -109,7 +109,6 @@ $('#cart-items').addEventListener('click', (event) => {
 function openCart() { $('#cart-overlay').hidden = false; $('#cart-drawer').classList.add('open'); $('#cart-drawer').setAttribute('aria-hidden', 'false'); document.body.classList.add('cart-open'); }
 function closeCart() { $('#cart-overlay').hidden = true; $('#cart-drawer').classList.remove('open'); $('#cart-drawer').setAttribute('aria-hidden', 'true'); document.body.classList.remove('cart-open'); }
 $('#cart-open').addEventListener('click', openCart); $('#cart-close').addEventListener('click', closeCart); $('#cart-overlay').addEventListener('click', closeCart);
-$('#header-order').addEventListener('click', openCart);
 $('#checkout-open').addEventListener('click', () => { closeCart(); $('#checkout-dialog').showModal(); });
 $('#checkout-close').addEventListener('click', () => $('#checkout-dialog').close());
 $('#checkout-form').addEventListener('submit', async (event) => {

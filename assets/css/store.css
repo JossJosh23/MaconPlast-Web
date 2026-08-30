@@ -637,4 +637,67 @@ footer > div a:hover { color: var(--cyan); }
   .hero-shade { background: linear-gradient(0deg,rgba(2,24,75,.98) 7%,rgba(3,47,112,.82) 62%,rgba(0,143,206,.14)); }
   .filter { background: rgba(255,255,255,.8); }
 }
+
+/* Mobile-first polish: iOS safe areas, touch targets and compact layouts */
+html { scroll-behavior: smooth; text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+body { min-width: 280px; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button, .btn, .filter, .nav a, .cart-trigger { touch-action: manipulation; }
+img { max-width: 100%; }
+
+@media (max-width: 700px) {
+  .header { padding-right: max(14px, env(safe-area-inset-right)); padding-left: max(14px, env(safe-area-inset-left)); }
+  .brand-logo { width: clamp(148px, 45vw, 190px); }
+  .menu-btn, .cart-trigger, .cart-head button, .checkout-head button { min-width: 44px; min-height: 44px; }
+  .nav { right: max(8px, env(safe-area-inset-right)); left: max(8px, env(safe-area-inset-left)); overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+  .nav::-webkit-scrollbar, .filters::-webkit-scrollbar { display: none; }
+  .nav a { min-width: 66px; min-height: 54px; padding: 7px 5px; }
+  .hero { min-height: max(650px, 100svh); }
+  .hero-content { width: auto; max-width: 540px; padding-bottom: 28px; }
+  .hero h1 { max-width: 12ch; font-size: clamp(2.45rem, 12vw, 4rem); line-height: .95; }
+  .hero-copy { max-width: 34rem; font-size: 15px; }
+  .hero-actions { align-items: stretch; }
+  .hero-actions .btn, .hero-actions .text-link { min-height: 52px; justify-content: center; }
+  .trust-strip { width: calc(100% - 28px); }
+  .section { padding-right: max(16px, env(safe-area-inset-right)); padding-left: max(16px, env(safe-area-inset-left)); }
+  .section-heading { gap: 18px; }
+  .section h2 { font-size: clamp(2rem, 9vw, 3.2rem); }
+  .filters { margin-right: -16px; margin-left: -16px; padding: 2px 16px 10px; scroll-snap-type: x proximity; }
+  .filter { flex: 0 0 auto; min-height: 44px; scroll-snap-align: start; }
+  .catalog-grid { gap: 14px; }
+  .product-card { min-height: 0; border-radius: 22px; }
+  .product-visual { height: clamp(210px, 66vw, 310px); }
+  .card-copy { min-height: 184px; padding: 22px 20px; }
+  .card-copy h3 { padding-right: 38px; font-size: 20px; }
+  .card-copy p { max-width: calc(100% - 42px); }
+  .add-cart { right: 18px; bottom: 19px; width: 48px; height: 48px; }
+  .stock-badge { top: 13px; right: 13px; }
+  .about, .quote { gap: 42px; }
+  .stats > div { min-width: 0; }
+  .quote-form { padding: 22px 18px; }
+  .field input, .field select, .field textarea, .checkout-grid input, .checkout-grid textarea { font-size: 16px; }
+  .footer-main { padding-right: max(20px, env(safe-area-inset-right)); padding-left: max(20px, env(safe-area-inset-left)); }
+  .footer-column a { min-height: 36px; display: flex; align-items: center; }
+  .cart-drawer { width: 100%; padding-top: max(20px, env(safe-area-inset-top)); padding-right: max(16px, env(safe-area-inset-right)); padding-left: max(16px, env(safe-area-inset-left)); }
+  .cart-items { overscroll-behavior: contain; }
+  .quantity button { width: 38px; height: 38px; }
+  .quantity .remove-item { min-width: 56px; min-height: 38px; }
+  .checkout-dialog { width: 100%; max-width: none; max-height: 100dvh; margin: auto 0 0; border-radius: 24px 24px 0 0; }
+  .checkout-dialog form { max-height: 92dvh; padding-top: 24px; padding-right: max(18px, env(safe-area-inset-right)); padding-bottom: max(22px, env(safe-area-inset-bottom)); padding-left: max(18px, env(safe-area-inset-left)); overflow-y: auto; }
+}
+
+@media (max-width: 390px) {
+  .brand-logo { width: 142px; }
+  .hero-content { margin-right: 14px; margin-left: 14px; }
+  .hero-note { gap: 10px; }
+  .trust-strip { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .cart-item { grid-template-columns: 52px minmax(0, 1fr); gap: 9px; }
+  .cart-item img { width: 52px; height: 52px; }
+  .quantity { flex-wrap: wrap; }
+}
+
+@media (hover: none) {
+  .product-card:hover, .btn:hover, .whatsapp-widget:hover { transform: none; }
+}
  [hidden]{display:none!important}
