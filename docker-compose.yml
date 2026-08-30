@@ -1,18 +1,40 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-maconta}
+      POSTGRES_USER: ${POSTGRES_USER:-maconta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-clave-de-postgres}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   maconta-web:
     build: .
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-maconta}
+      PGUSER: ${POSTGRES_USER:-maconta}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-clave-de-postgres}
       ADMIN_USER: ${ADMIN_USER:-admin1}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin1}
     expose:
       - "3000"
     volumes:
-      - maconta_data:/app/data
       - maconta_uploads:/app/images/uploads
 
 volumes:
-  maconta_data:
+  postgres_data:
   maconta_uploads:

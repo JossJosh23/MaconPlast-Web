@@ -1,52 +1,54 @@
-# Despliegue de Maconta Plast
+# Despliegue de Maconta Plast con PostgreSQL
 
-## Recomendación: Dokploy
+## Recomendación: VPS de Hostinger + Dokploy
 
-Esta aplicación escribe datos en dos rutas que deben ser persistentes:
+La aplicación usa dos almacenamientos persistentes:
 
-- `/app/data`: base de datos SQLite, credenciales, productos, ventas y cotizaciones.
-- `/app/images/uploads`: imágenes cargadas desde el panel.
+- `postgres_data`: usuarios, productos, categorías, stock, precios, pedidos, cotizaciones y configuración.
+- `maconta_uploads`: imágenes cargadas desde el panel administrativo.
 
-El archivo `docker-compose.yml` ya crea un volumen independiente para cada ruta.
+El archivo `docker-compose.yml` crea PostgreSQL y la aplicación Node.js. El `Dockerfile` no sustituye a PostgreSQL: construye el servidor web que se conecta a la base de datos.
 
-### Pasos
+## Configuración en Dokploy
 
-1. Sube el proyecto completo a un repositorio Git privado.
-2. En Dokploy crea un proyecto y un servicio de tipo Docker Compose.
+1. Sube el proyecto a un repositorio Git privado.
+2. En Dokploy crea un proyecto de tipo Docker Compose.
 3. Conecta el repositorio y selecciona `docker-compose.yml`.
-4. Añade estas variables de entorno con valores seguros:
+4. Define estas variables en Dokploy (sin comillas):
 
    ```env
+   POSTGRES_DB=maconta
+   POSTGRES_USER=maconta
+   POSTGRES_PASSWORD=una-clave-postgres-muy-larga-y-unica
    ADMIN_USER=tu-correo@dominio.com
-   ADMIN_PASSWORD=una-contraseña-larga-y-unica
+   ADMIN_PASSWORD=otra-clave-larga-y-unica
    ```
 
-5. Despliega el servicio y configura el dominio apuntando al puerto interno `3000`.
-6. Activa copias de seguridad para los volúmenes `maconta_data` y `maconta_uploads`.
-7. Mantén una sola réplica mientras se use SQLite.
+5. Despliega y configura el dominio hacia el servicio `maconta-web`, puerto interno `3000`.
+6. Activa copias de seguridad para `postgres_data` y `maconta_uploads`.
 
-No cambies los nombres de los volúmenes después de tener datos reales.
+No publiques el puerto `5432` de PostgreSQL en Internet. El servicio web lo alcanza por la red privada de Docker.
 
-## Hostinger
+## Primer inicio
 
-La opción más segura para esta arquitectura es usar un VPS de Hostinger con Dokploy. También es posible utilizar Web App Hosting si el plan admite Node.js y almacenamiento persistente para SQLite e imágenes.
+Al arrancar, el servidor crea automáticamente las tablas y carga el catálogo inicial si la base está vacía. Las variables `ADMIN_USER` y `ADMIN_PASSWORD` crean el primer administrador. Después puedes cambiar el usuario, el correo de contacto y la contraseña desde el panel.
 
-Configuración de la aplicación Node.js:
+Los cambios posteriores en `ADMIN_USER` o `ADMIN_PASSWORD` no sobrescriben automáticamente una cuenta ya creada. Esto evita perder las credenciales configuradas desde el panel.
 
-- Versión: Node.js 24.
-- Archivo de entrada: `server.js`.
-- Instalación: `npm ci --omit=dev`.
-- Inicio: `npm start`.
-- Variable: `NODE_ENV=production`.
-- Variables privadas: `ADMIN_USER` y `ADMIN_PASSWORD`.
+## Comprobación
 
-No subas el proyecto como una página HTML estática: el carrito, panel, pedidos y cotizaciones necesitan que `server.js` permanezca ejecutándose.
+1. Abre `/api/health`; debe responder que PostgreSQL está conectado.
+2. Comprueba el catálogo en `/api/store`.
+3. Entra en `/admin.html` con las credenciales configuradas.
+4. Crea un producto, pedido y cotización de prueba.
+5. Reinicia ambos servicios y confirma que los datos e imágenes continúan disponibles.
 
-## Después de publicar
+## Copias de seguridad
 
-1. Comprueba `/api/store` y el catálogo público.
-2. Entra en `/admin.html` con las credenciales definidas en el hosting.
-3. Configura WhatsApp, correo, dirección y horario.
-4. Crea un pedido y una cotización de prueba.
-5. Comprueba que ambos aparezcan en el panel.
-6. Reinicia o redespliega y confirma que los datos continúan disponibles.
+Además del respaldo del volumen, puedes exportar la base con:
+
+```bash
+docker compose exec -T postgres pg_dump -U maconta -d maconta > maconta-backup.sql
+```
+
+La contraseña de PostgreSQL debe guardarse en las variables privadas de Dokploy y nunca dentro del repositorio.

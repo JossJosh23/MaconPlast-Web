@@ -90,7 +90,7 @@
             <label class="toggle-field wide"><input type="checkbox" name="quote_enabled" value="true"><span><strong>Mostrar sección de cotización</strong><small>Desactívala si deseas trabajar únicamente con el carrito.</small></span></label>
             <label class="wide">Título de cotización<input name="quote_title"></label>
             <label class="wide">Descripción de cotización<textarea name="quote_description" rows="3"></textarea></label>
-            <label>Correo para iniciar sesión<input type="email" name="admin_email"></label>
+            <label>Usuario o correo para iniciar sesión<input type="text" name="admin_email" minlength="3" autocomplete="username"></label>
           </div>
           <button class="primary" type="submit">Guardar configuración</button><p class="form-message" role="status"></p>
         </form>
