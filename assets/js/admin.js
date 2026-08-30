@@ -1,4 +1,4 @@
-const state = { products: [], categories: [], orders: [], quotes: [], adminEmail: '', setupRequired: false };
+const state = { products: [], categories: [], orders: [], quotes: [], customers: [], inventory: null, reports: null, adminEmail: '', setupRequired: false };
 const $ = (selector, scope = document) => scope.querySelector(selector);
 const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
 const money = (value) => `$${Number(value).toFixed(Number(value) < 1 ? 3 : 2).replace(/0+$/, '').replace(/\.$/, '')}`;
@@ -86,7 +86,7 @@ async function logout() {
 $('#logout').addEventListener('click', logout);
 $('#logout-mobile').addEventListener('click', logout);
 
-const titles = { dashboard: 'Resumen', products: 'Productos', categories: 'Categorías', orders: 'Ventas', quotes: 'Cotizaciones', settings: 'Configuración' };
+const titles = { dashboard: 'Resumen', products: 'Productos', inventory: 'Inventario', customers: 'Clientes', categories: 'Categorías', orders: 'Ventas', quotes: 'Cotizaciones', settings: 'Configuración', reports: 'Reportes' };
 async function openView(name) {
   $$('.admin-nav').forEach((button) => button.classList.toggle('active', button.dataset.view === name));
   $$('.admin-view').forEach((view) => view.classList.toggle('active', view.id === `view-${name}`));
@@ -94,6 +94,9 @@ async function openView(name) {
   if (name === 'orders') await loadOrders();
   if (name === 'quotes') await loadQuotes();
   if (name === 'settings') await loadSettings();
+  if (name === 'inventory') await loadInventory();
+  if (name === 'customers') await loadCustomers();
+  if (name === 'reports') await loadReports();
 }
 $$('.admin-nav').forEach((button) => button.addEventListener('click', () => openView(button.dataset.view)));
 $$('[data-go]').forEach((button) => button.addEventListener('click', () => openView(button.dataset.go)));
@@ -101,7 +104,7 @@ $$('[data-go]').forEach((button) => button.addEventListener('click', () => openV
 async function loadDashboard() {
   const metrics = await api('/api/admin/dashboard');
   $('#metric-products').textContent = metrics.products;
-  $('#metric-stock').textContent = metrics.outOfStock;
+  $('#metric-stock').textContent = metrics.lowStock;
   $('#metric-orders').textContent = metrics.pendingOrders;
   $('#metric-quotes').textContent = metrics.pendingQuotes;
   $('#metric-sales').textContent = money(metrics.sales);
@@ -159,6 +162,8 @@ function openProduct(product = null) {
   form.elements.tax_class.value = product?.tax_class || 'standard';
   form.elements.show_price.checked = product?.show_price ?? true;
   form.elements.stock.value = product?.stock ?? 0;
+  form.elements.min_stock.value = product?.min_stock ?? 0;
+  form.elements.track_inventory.checked = product?.track_inventory ?? true;
   form.elements.availability.value = product?.availability || 'available';
   form.elements.sort_order.value = product?.sort_order ?? state.products.length + 1;
   form.elements.description.value = product?.description || '';
@@ -264,6 +269,59 @@ $('#quotes-list').addEventListener('click', async (event) => {
   if (!id || !confirm('¿Eliminar esta cotización?')) return;
   try { await api(`/api/admin/quotes/${id}`, { method: 'DELETE' }); await Promise.all([loadQuotes(), loadDashboard()]); } catch (error) { alert(error.message); }
 });
+
+const movementLabels = { purchase: 'Compra', sale: 'Venta', damage: 'Daño', correction: 'Corrección' };
+const movementReasons = {
+  entry: [['purchase', 'Compra'], ['correction', 'Corrección de inventario']],
+  exit: [['sale', 'Venta manual'], ['damage', 'Daño o pérdida'], ['correction', 'Corrección de inventario']]
+};
+function updateMovementReasons() {
+  const form = $('#inventory-form');
+  const reasons = movementReasons[form.elements.direction.value] || movementReasons.entry;
+  form.elements.reason.innerHTML = reasons.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+}
+$('#inventory-form [name=direction]').addEventListener('change', updateMovementReasons);
+function fillInventoryProducts(products = state.products) {
+  const select = $('#inventory-form').elements.product_id;
+  select.innerHTML = `<option value="">Selecciona un producto</option>${products.map((product) => `<option value="${product.id}">${escapeHtml(product.name)} · stock ${product.stock}</option>`).join('')}`;
+}
+async function loadInventory() {
+  fillInventoryProducts();
+  try { state.inventory = await api('/api/admin/inventory'); } catch (error) { $('#stock-alerts').innerHTML = `<div class="inventory-error"><strong>No se pudo cargar el historial.</strong><span>${escapeHtml(error.message)}</span></div>`; return; }
+  fillInventoryProducts(state.inventory.products);
+  const low = state.inventory.products.filter((product) => product.low_stock);
+  $('#stock-alerts').innerHTML = low.length ? `<div class="alert-heading"><span>ALERTAS DE STOCK</span><strong>${low.length} producto(s) requieren atención</strong></div>${low.map((product) => `<article><div><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.category_name)}</small></div><span>${product.stock} / mínimo ${product.min_stock}</span></article>`).join('')}` : '<div class="stock-ok">✓ Todo el inventario está sobre el mínimo.</div>';
+  $('#inventory-movements').innerHTML = state.inventory.movements.map((movement) => `<tr><td data-label="Fecha">${new Date(movement.created_at).toLocaleString('es-EC')}</td><td data-label="Producto"><strong>${escapeHtml(movement.product_name)}</strong><small>${escapeHtml(movement.notes || '')}</small></td><td data-label="Movimiento"><span class="movement ${movement.quantity_change > 0 ? 'in' : 'out'}">${movement.quantity_change > 0 ? '+' : ''}${movement.quantity_change}</span></td><td data-label="Motivo">${movementLabels[movement.reason] || movement.reason}</td><td data-label="Existencia">${movement.stock_before} → ${movement.stock_after}</td></tr>`).join('') || '<tr><td colspan="5">Todavía no hay movimientos.</td></tr>';
+}
+$('#inventory-form').addEventListener('submit', async (event) => {
+  event.preventDefault(); const form = event.currentTarget;
+  try { const data = await api('/api/admin/inventory/movements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); form.reset(); updateMovementReasons(); message(form, data.message, true); await Promise.all([loadInventory(), loadProducts(), loadDashboard()]); } catch (error) { message(form, error.message); }
+});
+
+function renderCustomers() {
+  const search = $('#customer-search').value.trim().toLowerCase();
+  const customers = state.customers.filter((customer) => !search || `${customer.name} ${customer.email} ${customer.phone} ${customer.tax_id}`.toLowerCase().includes(search));
+  $('#customers-list').innerHTML = customers.map((customer) => { const phone=String(customer.phone||'').replace(/\D/g,''); return `<article class="customer-card"><div class="customer-avatar">${escapeHtml(customer.name.charAt(0).toUpperCase())}</div><div><strong>${escapeHtml(customer.name)}</strong><small>${escapeHtml(customer.tax_id || 'Sin RUC/Cédula')}</small><a href="mailto:${escapeHtml(customer.email)}">${escapeHtml(customer.email || 'Sin correo')}</a><span>${escapeHtml(customer.phone || 'Sin teléfono')}</span></div><div class="customer-stats"><span><b>${customer.order_count}</b> pedidos</span><span><b>${customer.quote_count}</b> cotizaciones</span><span><b>${money(customer.total_spent)}</b> vendido</span></div><div class="actions"><button data-edit-customer="${customer.id}">Ver ficha</button>${phone?`<a class="whatsapp-action" href="https://wa.me/${phone}" target="_blank" rel="noopener">WhatsApp</a>`:''}</div></article>`; }).join('') || '<div class="welcome-card">No hay clientes que coincidan.</div>';
+}
+async function loadCustomers() { state.customers = await api('/api/admin/customers'); renderCustomers(); }
+$('#customer-search').addEventListener('input', renderCustomers);
+async function openCustomer(customerId = null) {
+  const form=$('#customer-form');form.reset();$('#customer-history').innerHTML='';
+  if(customerId){const customer=await api(`/api/admin/customers/${customerId}`);for(const field of ['id','name','phone','email','tax_id','address','notes'])form.elements[field].value=customer[field]||'';$('#customer-dialog-title').textContent='Ficha del cliente';$('#customer-history').innerHTML=`<h3>Historial</h3><div class="history-grid"><div><strong>Pedidos</strong>${customer.orders.map((order)=>`<span>#${order.id} · ${money(order.total)} · ${escapeHtml(order.status)}</span>`).join('')||'<span>Sin pedidos</span>'}</div><div><strong>Cotizaciones</strong>${customer.quotes.map((quote)=>`<span>#C${quote.id} · ${escapeHtml(quote.product)} · ${escapeHtml(quote.status)}</span>`).join('')||'<span>Sin cotizaciones</span>'}</div></div>`;}else{$('#customer-dialog-title').textContent='Agregar cliente';}
+  message(form,'');$('#customer-dialog').showModal();
+}
+$('#new-customer').addEventListener('click',()=>openCustomer());$('#close-customer').addEventListener('click',()=>$('#customer-dialog').close());
+$('#customers-list').addEventListener('click',(event)=>{const id=event.target.dataset.editCustomer;if(id)openCustomer(id);});
+$('#customer-form').addEventListener('submit',async(event)=>{event.preventDefault();const form=event.currentTarget,data=Object.fromEntries(new FormData(form)),id=data.id;try{await api(id?`/api/admin/customers/${id}`:'/api/admin/customers',{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});$('#customer-dialog').close();await loadCustomers();}catch(error){message(form,error.message);}});
+
+async function loadReports(){
+  const data=await api('/api/admin/reports');state.reports=data;$('#report-sales').textContent=money(data.summary.sales);$('#report-orders').textContent=data.summary.orders;$('#report-inventory').textContent=money(data.summary.inventory_value);$('#report-low-stock').textContent=data.summary.low_stock;
+  renderSalesChart();
+  $('#top-products').innerHTML=data.top.map((row,index)=>`<div class="ranking-row"><b>${index+1}</b><span>${escapeHtml(row.product_name)}<small>${row.units} unidades</small></span><strong>${money(row.total)}</strong></div>`).join('')||'<p>Sin ventas todavía.</p>';
+  $('#slow-products').innerHTML=data.slow.map((row)=>`<div class="ranking-row"><span>${escapeHtml(row.name)}<small>Stock ${row.stock}</small></span><strong>${row.units} vendidos</strong></div>`).join('');
+}
+function renderSalesChart(){const period=$('#report-period').value,data=state.reports?.[period]||[],titles={daily:'Ventas diarias',monthly:'Ventas mensuales',annual:'Ventas anuales'};$('#sales-chart-title').textContent=titles[period];const max=Math.max(...data.map((row)=>row.total),1);$('#sales-chart').innerHTML=data.map((row)=>`<div class="chart-row"><span>${escapeHtml(row.period)}</span><div><i style="width:${Math.max(2,row.total/max*100)}%"></i></div><strong>${money(row.total)}</strong></div>`).join('');}
+$('#report-period').addEventListener('change',renderSalesChart);
 
 async function loadSettings() {
   const settings = await api('/api/admin/settings');

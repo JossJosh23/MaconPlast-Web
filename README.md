@@ -41,6 +41,10 @@ Abre `http://localhost:3000`. El panel está en `http://localhost:3000/admin.htm
 - Catálogo dinámico con categorías, precios, filtros, inventario y disponibilidad.
 - Carrito persistente, pedidos y cotizaciones especiales.
 - Administración de productos, imágenes, categorías, ventas y solicitudes.
+- Inventario avanzado con entradas, salidas, stock mínimo, alertas e historial de movimientos.
+- Fichas de clientes con RUC/cédula, notas, WhatsApp e historial de pedidos y cotizaciones.
+- Reportes diarios, mensuales y anuales, productos más vendidos, poco movimiento y valor de inventario.
+- Exportación de reportes en CSV, Excel y PDF.
 - Configuración de WhatsApp, correo, dirección, horario, footer y acceso administrativo.
 - Interfaz mobile-first con áreas seguras de iOS, navegación táctil, diálogos adaptables y tarjetas administrativas.
 

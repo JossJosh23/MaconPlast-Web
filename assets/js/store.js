@@ -203,7 +203,7 @@ $('.quote-form').addEventListener('submit', async (event) => {
   const fields = Object.fromEntries(new FormData(form));
   status.textContent = 'Enviando solicitud…';
   try {
-    const response = await fetch('/api/quotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_name: fields.name, email: fields.email, phone: fields.phone, product: fields.product, message: fields.message }) });
+    const response = await fetch('/api/quotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_name: fields.name, email: fields.email, phone: fields.phone, tax_id: fields.tax_id, product: fields.product, message: fields.message }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     status.textContent = `¡Solicitud #C${String(data.id).padStart(4, '0')} recibida! La revisaremos y te contactaremos.`;

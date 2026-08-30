@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/admin.css">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20260830-3">
 </head>
 <body>
   <main class="auth-shell" id="auth-shell">
@@ -33,10 +33,13 @@
       <nav aria-label="Secciones administrativas">
         <button class="admin-nav active" data-view="dashboard"><span>⌂</span>Resumen</button>
         <button class="admin-nav" data-view="products"><span>▦</span>Productos</button>
+        <button class="admin-nav" data-view="inventory"><span>▤</span>Inventario</button>
+        <button class="admin-nav" data-view="customers"><span>♙</span>Clientes</button>
         <button class="admin-nav" data-view="categories"><span>◇</span>Categorías</button>
         <button class="admin-nav" data-view="orders"><span>▤</span>Ventas</button>
         <button class="admin-nav" data-view="quotes"><span>✦</span>Cotizaciones</button>
         <button class="admin-nav" data-view="settings"><span>⚙</span>Configuración</button>
+        <button class="admin-nav" data-view="reports"><span>⌁</span>Reportes</button>
       </nav>
       <div class="sidebar-bottom"><small id="admin-email"></small><button id="logout">Cerrar sesión</button></div>
     </aside>
@@ -47,7 +50,7 @@
       <section class="admin-view active" id="view-dashboard">
         <div class="metric-grid">
           <article><span>Productos</span><strong id="metric-products">0</strong><small>en el catálogo</small></article>
-          <article><span>Agotados</span><strong id="metric-stock">0</strong><small>requieren atención</small></article>
+          <article><span>Stock bajo</span><strong id="metric-stock">0</strong><small>requieren reposición</small></article>
           <article><span>Pedidos pendientes</span><strong id="metric-orders">0</strong><small>por gestionar</small></article>
           <article><span>Cotizaciones abiertas</span><strong id="metric-quotes">0</strong><small>por responder</small></article>
           <article class="metric-sales"><span>Ventas registradas</span><strong id="metric-sales">$0.00</strong><small>sin pedidos cancelados</small></article>
@@ -58,6 +61,18 @@
       <section class="admin-view" id="view-products">
         <div class="toolbar"><input id="product-search" type="search" placeholder="Buscar productos…"><select id="product-category-filter"><option value="">Todas las categorías</option></select><button class="primary" id="new-product">+ Agregar producto</button></div>
         <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th></th></tr></thead><tbody id="products-table"></tbody></table></div>
+      </section>
+
+      <section class="admin-view" id="view-inventory">
+        <div class="inventory-layout">
+          <form class="panel-form" id="inventory-form"><span>MOVIMIENTO MANUAL</span><h2>Entrada o salida</h2><label>Producto<select name="product_id" required></select></label><label>Tipo<select name="direction"><option value="entry">Entrada</option><option value="exit">Salida</option></select></label><label>Cantidad<input name="quantity" type="number" min="1" step="1" required></label><label>Motivo<select name="reason"><option value="purchase">Compra</option><option value="correction">Corrección de inventario</option></select></label><label>Nota<textarea name="notes" rows="3" placeholder="Factura, proveedor o explicación"></textarea></label><button class="primary" type="submit">Registrar movimiento</button><p class="form-message" role="status"></p></form>
+          <div><div class="stock-alerts" id="stock-alerts"></div><div class="list-panel inventory-history"><div><span>HISTORIAL</span><h2>Últimos movimientos</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Movimiento</th><th>Motivo</th><th>Existencia</th></tr></thead><tbody id="inventory-movements"></tbody></table></div></div></div>
+        </div>
+      </section>
+
+      <section class="admin-view" id="view-customers">
+        <div class="toolbar"><input id="customer-search" type="search" placeholder="Buscar nombre, teléfono, correo o RUC…"><button class="primary" id="new-customer">+ Agregar cliente</button></div>
+        <div class="customer-grid" id="customers-list"></div>
       </section>
 
       <section class="admin-view" id="view-categories">
@@ -110,6 +125,12 @@
         </form>
         <form class="settings-form compact" id="password-form"><div class="settings-heading"><span>SEGURIDAD</span><h2>Cambiar contraseña</h2></div><div class="settings-grid"><label>Contraseña actual<input type="password" name="current_password" required></label><label>Nueva contraseña<input type="password" name="new_password" minlength="10" required></label></div><button type="submit">Actualizar contraseña</button><p class="form-message" role="status"></p></form>
       </section>
+
+      <section class="admin-view" id="view-reports">
+        <div class="report-actions"><a href="/api/admin/reports/export.csv">Descargar CSV</a><a href="/api/admin/reports/export.xlsx">Descargar Excel</a><a href="/api/admin/reports/export.pdf">Descargar PDF</a></div>
+        <div class="metric-grid report-metrics"><article><span>Ventas acumuladas</span><strong id="report-sales">$0</strong></article><article><span>Pedidos</span><strong id="report-orders">0</strong></article><article><span>Valor de inventario</span><strong id="report-inventory">$0</strong></article><article><span>Stock bajo</span><strong id="report-low-stock">0</strong></article></div>
+        <div class="report-grid"><div class="list-panel"><div class="report-heading"><div><span>EVOLUCIÓN DE VENTAS</span><h2 id="sales-chart-title">Ventas mensuales</h2></div><select id="report-period"><option value="daily">Diarias</option><option value="monthly" selected>Mensuales</option><option value="annual">Anuales</option></select></div><div class="sales-chart" id="sales-chart"></div></div><div class="list-panel"><div><span>PRODUCTOS</span><h2>Más vendidos</h2></div><div id="top-products"></div></div><div class="list-panel"><div><span>ATENCIÓN</span><h2>Poco movimiento</h2></div><div id="slow-products"></div></div></div>
+      </section>
     </div>
   </div>
 
@@ -129,6 +150,8 @@
         <label>Clase de impuesto<select name="tax_class"><option value="standard">Estándar</option><option value="zero">Tasa cero</option><option value="exempt">Exento</option></select></label>
         <label class="toggle-field"><input name="show_price" type="checkbox" value="true" checked><span><strong>Mostrar precio</strong><small>Control individual para este producto.</small></span></label>
         <label>Stock<input name="stock" type="number" min="0" step="1" value="0"></label>
+        <label>Stock mínimo<input name="min_stock" type="number" min="0" step="1" value="0"></label>
+        <label class="toggle-field"><input name="track_inventory" type="checkbox" value="true" checked><span><strong>Controlar inventario</strong><small>Registra ventas y alerta al llegar al mínimo.</small></span></label>
         <label>Estado<select name="availability"><option value="available">Disponible</option><option value="out_of_stock">Agotado</option><option value="hidden">Oculto</option></select></label>
         <label>Orden<input name="sort_order" type="number" value="0"></label>
         <label class="wide">Descripción<textarea name="description" rows="3"></textarea></label>
@@ -138,6 +161,15 @@
     </form>
   </dialog>
 
-  <script src="assets/js/admin.js"></script>
+  <dialog id="customer-dialog">
+    <form id="customer-form">
+      <div class="dialog-head"><div><span>CLIENTES</span><h2 id="customer-dialog-title">Agregar cliente</h2></div><button type="button" id="close-customer" aria-label="Cerrar">×</button></div>
+      <input type="hidden" name="id">
+      <div class="form-grid"><label class="wide">Nombre / Empresa<input name="name" required></label><label>Teléfono<input name="phone" type="tel"></label><label>Correo<input name="email" type="email"></label><label>RUC / Cédula<input name="tax_id"></label><label class="wide">Dirección<input name="address"></label><label class="wide">Notas internas<textarea name="notes" rows="4"></textarea></label></div>
+      <div class="customer-history" id="customer-history"></div><button class="primary" type="submit">Guardar cliente</button><p class="form-message" role="status"></p>
+    </form>
+  </dialog>
+
+  <script src="assets/js/admin.js?v=20260830-4"></script>
 </body>
 </html>
