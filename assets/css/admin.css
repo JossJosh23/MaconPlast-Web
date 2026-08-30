@@ -35,3 +35,15 @@ html{text-size-adjust:100%;-webkit-text-size-adjust:100%}body{min-width:280px}bu
 }
 
 @media(max-width:370px){.metric-grid{grid-template-columns:1fr}.metric-sales{grid-column:auto}.admin-nav{min-width:62px;flex-basis:62px}.admin-header h1{font-size:23px}tr{grid-template-columns:1fr}.product-cell{grid-column:1}.order-summary{grid-template-columns:1fr}.order-summary>*{grid-column:1!important}}
+
+/* Menú desplegable de inventario */
+.nav-group{min-width:0;display:grid}.nav-group>.admin-nav{width:100%}.nav-chevron{width:9px;height:9px;margin-right:3px;margin-left:auto;flex:0 0 9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .22s ease}.nav-group.open .nav-chevron{transform:translateY(2px) rotate(225deg)}
+.inventory-subnav{max-height:0;margin:0 3px;padding:0 0 0 36px;display:grid;gap:3px;overflow:hidden;opacity:0;transition:max-height .25s ease,margin .25s ease,opacity .2s ease}.nav-group.open .inventory-subnav{max-height:210px;margin-top:4px;margin-bottom:7px;opacity:1}
+.inventory-subnav button{position:relative;min-height:35px;padding:7px 30px 7px 11px;border:0;border-radius:9px;background:transparent;color:#a9bfd8;text-align:left;font-size:10px;font-weight:700;line-height:1.2}.inventory-subnav button:hover,.inventory-subnav button.active{background:#ffffff14;color:#fff}.inventory-subnav button.active::before{content:"";position:absolute;top:9px;bottom:9px;left:0;width:3px;border-radius:99px;background:var(--cyan)}
+.inventory-subnav .alert-link b{position:absolute;z-index:1;top:-4px;right:4px;min-width:21px;height:21px;padding:0 5px;display:grid;place-items:center;border:2px solid #052b6d;border-radius:99px;background:#ef3340;color:#fff;box-shadow:0 4px 10px #ef334066;font-size:9px;line-height:1}.admin-nav.has-alerts>span{position:relative}.admin-nav.has-alerts>span::after{content:"";position:absolute;top:-1px;right:-1px;width:7px;height:7px;border:2px solid #052b6d;border-radius:50%;background:#ef3340}
+
+@media(max-width:900px){
+  .sidebar{overflow:visible}.sidebar nav{overflow-y:visible}.nav-group{position:relative;min-width:68px;flex:1 0 68px;display:block}.nav-group>.admin-nav{height:100%;min-width:0}.nav-chevron{display:none}
+  .inventory-subnav{position:fixed;z-index:35;right:max(10px,env(safe-area-inset-right));bottom:calc(88px + env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left));max-height:0;margin:0;padding:0;grid-template-columns:1fr 1fr;gap:7px;border:0;border-radius:18px;background:#052b6df5;box-shadow:0 18px 55px #001b4277;opacity:0;pointer-events:none;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.nav-group.open .inventory-subnav{max-height:180px;margin:0;padding:10px;opacity:1;pointer-events:auto}.inventory-subnav button{min-height:46px;padding:8px 30px 8px 12px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff0b;font-size:11px}.inventory-subnav button.active{background:#ffffff1c}.inventory-subnav .alert-link b{top:-5px;right:-4px}
+}
+@media(max-width:370px){.nav-group{min-width:62px;flex-basis:62px}.inventory-subnav{grid-template-columns:1fr}}

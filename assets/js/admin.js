@@ -111,7 +111,18 @@ async function openView(name) {
   if (name === 'customers') await loadCustomers();
   if (name === 'reports') await loadReports();
 }
-$$('.admin-nav').forEach((button) => button.addEventListener('click', () => openView(button.dataset.view)));
+const inventoryNavGroup = $('#inventory-nav-group');
+const inventoryNavButton = inventoryNavGroup.querySelector('.admin-nav');
+function toggleInventoryMenu(force) {
+  const open = typeof force === 'boolean' ? force : !inventoryNavGroup.classList.contains('open');
+  inventoryNavGroup.classList.toggle('open', open);
+  inventoryNavButton.setAttribute('aria-expanded', String(open));
+}
+$$('.admin-nav').forEach((button) => button.addEventListener('click', () => {
+  if (button.dataset.view === 'inventory') toggleInventoryMenu();
+  else toggleInventoryMenu(false);
+  openView(button.dataset.view);
+}));
 $$('[data-go]').forEach((button) => button.addEventListener('click', () => openView(button.dataset.go)));
 
 async function loadDashboard() {
@@ -121,6 +132,15 @@ async function loadDashboard() {
   $('#metric-orders').textContent = metrics.pendingOrders;
   $('#metric-quotes').textContent = metrics.pendingQuotes;
   $('#metric-sales').textContent = money(metrics.sales);
+  updateInventoryAlertBadge(metrics.lowStock);
+}
+
+function updateInventoryAlertBadge(count = 0) {
+  const badge = $('#inventory-alert-badge');
+  const total = Math.max(0, Number(count) || 0);
+  badge.textContent = total > 99 ? '99+' : total;
+  badge.hidden = total === 0;
+  inventoryNavButton.classList.toggle('has-alerts', total > 0);
 }
 
 async function loadCategories() {
@@ -295,9 +315,14 @@ function updateMovementReasons() {
   form.elements.reason.innerHTML = reasons.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
 }
 $('#inventory-form [name=direction]').addEventListener('change', updateMovementReasons);
-$$('[data-inventory-tab]').forEach((button) => button.addEventListener('click', () => {
-  $$('[data-inventory-tab]').forEach((item) => item.classList.toggle('active', item === button));
-  $$('.inventory-panel').forEach((panel) => panel.classList.toggle('active', panel.id === `inventory-${button.dataset.inventoryTab}`));
+function selectInventorySection(section) {
+  $$('[data-inventory-nav]').forEach((item) => item.classList.toggle('active', item.dataset.inventoryNav === section));
+  $$('.inventory-panel').forEach((panel) => panel.classList.toggle('active', panel.id === `inventory-${section}`));
+}
+$$('[data-inventory-nav]').forEach((button) => button.addEventListener('click', async () => {
+  selectInventorySection(button.dataset.inventoryNav);
+  await openView('inventory');
+  if (window.matchMedia('(max-width: 900px)').matches) toggleInventoryMenu(false);
 }));
 function fillInventoryProducts(products = state.products) {
   const select = $('#inventory-form').elements.product_id;
@@ -309,6 +334,7 @@ async function loadInventory() {
   fillInventoryProducts(state.inventory.products);
   $('#final-stock-table').innerHTML = state.inventory.products.map((product) => `<tr><td data-label="Producto"><strong>${escapeHtml(product.name)}</strong></td><td data-label="Categoría">${escapeHtml(product.category_name)}</td><td data-label="Stock final"><strong>${product.track_inventory ? product.stock : 'Sin control'}</strong></td><td data-label="Stock mínimo">${product.track_inventory ? product.min_stock : '—'}</td><td data-label="Estado"><span class="status ${product.low_stock ? 'out_of_stock' : 'available'}">${!product.track_inventory ? 'No controlado' : product.low_stock ? 'Stock bajo' : 'Correcto'}</span></td><td data-label="Valor">${product.track_inventory ? money(product.stock * product.price) : '—'}</td></tr>`).join('');
   const low = state.inventory.products.filter((product) => product.low_stock);
+  updateInventoryAlertBadge(low.length);
   $('#stock-alerts').innerHTML = low.length ? `<div class="alert-heading"><span>ALERTAS DE STOCK</span><strong>${low.length} producto(s) requieren atención</strong></div>${low.map((product) => `<article><div><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.category_name)}</small></div><span>${product.stock} / mínimo ${product.min_stock}</span></article>`).join('')}` : '<div class="stock-ok">✓ Todo el inventario está sobre el mínimo.</div>';
   $('#inventory-movements').innerHTML = state.inventory.movements.map((movement) => `<tr><td data-label="Fecha">${new Date(movement.created_at).toLocaleString('es-EC')}</td><td data-label="Producto"><strong>${escapeHtml(movement.product_name)}</strong><small>${escapeHtml(movement.notes || '')}</small></td><td data-label="Movimiento"><span class="movement ${movement.quantity_change > 0 ? 'in' : 'out'}">${movement.quantity_change > 0 ? '+' : ''}${movement.quantity_change}</span></td><td data-label="Motivo">${movementLabels[movement.reason] || movement.reason}</td><td data-label="Existencia">${movement.stock_before} → ${movement.stock_after}</td></tr>`).join('') || '<tr><td colspan="5">Todavía no hay movimientos.</td></tr>';
 }

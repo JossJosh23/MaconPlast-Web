@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20260830-6">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20260830-8">
 </head>
 <body>
   <main class="auth-shell" id="auth-shell">
@@ -33,7 +33,7 @@
       <nav aria-label="Secciones administrativas">
         <button class="admin-nav active" data-view="dashboard"><span>⌂</span>Resumen</button>
         <button class="admin-nav" data-view="products"><span>▦</span>Productos</button>
-        <button class="admin-nav" data-view="inventory"><span>▤</span>Inventario</button>
+        <div class="nav-group" id="inventory-nav-group"><button class="admin-nav" data-view="inventory" aria-expanded="false" aria-controls="inventory-subnav"><span>▤</span>Inventario<i class="nav-chevron" aria-hidden="true"></i></button><div class="inventory-subnav" id="inventory-subnav"><button class="active" type="button" data-inventory-nav="stock">Stock final</button><button type="button" data-inventory-nav="movement">Ingresos y egresos</button><button type="button" data-inventory-nav="history">Últimos movimientos</button><button class="alert-link" type="button" data-inventory-nav="alerts">Alertas de stock<b id="inventory-alert-badge" hidden>0</b></button></div></div>
         <button class="admin-nav" data-view="customers"><span>♙</span>Clientes</button>
         <button class="admin-nav" data-view="categories"><span>◇</span>Categorías</button>
         <button class="admin-nav" data-view="orders"><span>▤</span>Ventas</button>
@@ -64,7 +64,6 @@
       </section>
 
       <section class="admin-view" id="view-inventory">
-        <div class="subnav" role="tablist" aria-label="Secciones de inventario"><button class="active" type="button" data-inventory-tab="stock">Stock final</button><button type="button" data-inventory-tab="movement">Ingresos y egresos</button><button type="button" data-inventory-tab="history">Últimos movimientos</button><button type="button" data-inventory-tab="alerts">Alertas de stock</button></div>
         <div class="inventory-panel active" id="inventory-stock"><div class="list-panel"><div><span>EXISTENCIAS ACTUALES</span><h2>Stock final</h2><p>Resumen consolidado después de todas las entradas, salidas y ventas.</p></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Stock final</th><th>Stock mínimo</th><th>Estado</th><th>Valor</th></tr></thead><tbody id="final-stock-table"></tbody></table></div></div></div>
         <div class="inventory-panel" id="inventory-movement"><form class="panel-form inventory-movement-form" id="inventory-form"><span>MOVIMIENTO MANUAL</span><h2>Ingreso o egreso de producto</h2><div class="form-grid"><label class="wide">Producto<select name="product_id" required></select></label><label>Tipo<select name="direction"><option value="entry">Entrada</option><option value="exit">Salida</option></select></label><label>Cantidad<input name="quantity" type="number" min="1" step="1" required></label><label>Motivo<select name="reason"><option value="purchase">Compra</option><option value="correction">Corrección de inventario</option></select></label><label class="wide">Nota<textarea name="notes" rows="3" placeholder="Factura, proveedor o explicación"></textarea></label></div><button class="primary" type="submit">Registrar movimiento</button><p class="form-message" role="status"></p></form></div>
         <div class="inventory-panel" id="inventory-history"><div class="list-panel inventory-history"><div><span>TRAZABILIDAD</span><h2>Últimos movimientos</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Movimiento</th><th>Motivo</th><th>Existencia</th></tr></thead><tbody id="inventory-movements"></tbody></table></div></div></div>
@@ -173,6 +172,6 @@
 
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="assets/js/admin.js?v=20260830-6"></script>
+  <script src="assets/js/admin.js?v=20260830-7"></script>
 </body>
 </html>
