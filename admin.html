@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/admin.css?v=20260830-3">
+  <link rel="stylesheet" href="assets/css/admin.css?v=20260830-6">
 </head>
 <body>
   <main class="auth-shell" id="auth-shell">
@@ -64,10 +64,11 @@
       </section>
 
       <section class="admin-view" id="view-inventory">
-        <div class="inventory-layout">
-          <form class="panel-form" id="inventory-form"><span>MOVIMIENTO MANUAL</span><h2>Entrada o salida</h2><label>Producto<select name="product_id" required></select></label><label>Tipo<select name="direction"><option value="entry">Entrada</option><option value="exit">Salida</option></select></label><label>Cantidad<input name="quantity" type="number" min="1" step="1" required></label><label>Motivo<select name="reason"><option value="purchase">Compra</option><option value="correction">Corrección de inventario</option></select></label><label>Nota<textarea name="notes" rows="3" placeholder="Factura, proveedor o explicación"></textarea></label><button class="primary" type="submit">Registrar movimiento</button><p class="form-message" role="status"></p></form>
-          <div><div class="stock-alerts" id="stock-alerts"></div><div class="list-panel inventory-history"><div><span>HISTORIAL</span><h2>Últimos movimientos</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Movimiento</th><th>Motivo</th><th>Existencia</th></tr></thead><tbody id="inventory-movements"></tbody></table></div></div></div>
-        </div>
+        <div class="subnav" role="tablist" aria-label="Secciones de inventario"><button class="active" type="button" data-inventory-tab="stock">Stock final</button><button type="button" data-inventory-tab="movement">Ingresos y egresos</button><button type="button" data-inventory-tab="history">Últimos movimientos</button><button type="button" data-inventory-tab="alerts">Alertas de stock</button></div>
+        <div class="inventory-panel active" id="inventory-stock"><div class="list-panel"><div><span>EXISTENCIAS ACTUALES</span><h2>Stock final</h2><p>Resumen consolidado después de todas las entradas, salidas y ventas.</p></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Stock final</th><th>Stock mínimo</th><th>Estado</th><th>Valor</th></tr></thead><tbody id="final-stock-table"></tbody></table></div></div></div>
+        <div class="inventory-panel" id="inventory-movement"><form class="panel-form inventory-movement-form" id="inventory-form"><span>MOVIMIENTO MANUAL</span><h2>Ingreso o egreso de producto</h2><div class="form-grid"><label class="wide">Producto<select name="product_id" required></select></label><label>Tipo<select name="direction"><option value="entry">Entrada</option><option value="exit">Salida</option></select></label><label>Cantidad<input name="quantity" type="number" min="1" step="1" required></label><label>Motivo<select name="reason"><option value="purchase">Compra</option><option value="correction">Corrección de inventario</option></select></label><label class="wide">Nota<textarea name="notes" rows="3" placeholder="Factura, proveedor o explicación"></textarea></label></div><button class="primary" type="submit">Registrar movimiento</button><p class="form-message" role="status"></p></form></div>
+        <div class="inventory-panel" id="inventory-history"><div class="list-panel inventory-history"><div><span>TRAZABILIDAD</span><h2>Últimos movimientos</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Movimiento</th><th>Motivo</th><th>Existencia</th></tr></thead><tbody id="inventory-movements"></tbody></table></div></div></div>
+        <div class="inventory-panel" id="inventory-alerts"><div class="stock-alerts" id="stock-alerts"></div></div>
       </section>
 
       <section class="admin-view" id="view-customers">
@@ -77,7 +78,7 @@
 
       <section class="admin-view" id="view-categories">
         <div class="two-column">
-          <form class="panel-form" id="category-form"><span>NUEVA CATEGORÍA</span><h2>Añadir categoría</h2><input type="hidden" name="id"><label>Nombre<input name="name" required placeholder="Ej. Empaques"></label><label>Orden<input name="sort_order" type="number" value="0"></label><button class="primary" type="submit">Guardar categoría</button><button class="text-button" type="button" id="cancel-category" hidden>Cancelar edición</button><p class="form-message" role="status"></p></form>
+          <form class="panel-form" id="category-form"><span>NUEVA CATEGORÍA</span><h2>Añadir categoría</h2><input type="hidden" name="id"><label>Nombre<input name="name" required placeholder="Ej. Empaques"></label><label>Posición en el catálogo<input name="sort_order" type="number" min="1" placeholder="Última posición"><small>Si la posición está ocupada, las demás categorías se desplazarán automáticamente.</small></label><button class="primary" type="submit">Guardar categoría</button><button class="text-button" type="button" id="cancel-category" hidden>Cancelar edición</button><p class="form-message" role="status"></p></form>
           <div class="list-panel"><div><span>CATEGORÍAS</span><h2>Organización del catálogo</h2></div><div id="category-list"></div></div>
         </div>
       </section>
@@ -170,6 +171,8 @@
     </form>
   </dialog>
 
-  <script src="assets/js/admin.js?v=20260830-4"></script>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="assets/js/admin.js?v=20260830-6"></script>
 </body>
 </html>

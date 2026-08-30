@@ -4,6 +4,19 @@ const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)]
 const money = (value) => `$${Number(value).toFixed(Number(value) < 1 ? 3 : 2).replace(/0+$/, '').replace(/\.$/, '')}`;
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 
+function showToast(text, type = 'success') {
+  const region = $('#toast-region');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  toast.innerHTML = `<span class="toast-icon">${type === 'success' ? '✓' : '!'}</span><div><strong>${type === 'success' ? 'Operación completada' : 'No se pudo completar'}</strong><p>${escapeHtml(text)}</p></div><button type="button" aria-label="Cerrar notificación">×</button>`;
+  const close = () => { toast.classList.add('leaving'); setTimeout(() => toast.remove(), 220); };
+  toast.querySelector('button').addEventListener('click', close);
+  region.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  setTimeout(close, 4200);
+}
+
 function toLocalDateTime(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -186,6 +199,7 @@ $('#product-form').addEventListener('submit', async (event) => {
     }
     await api(id ? `/api/admin/products/${id}` : '/api/admin/products', { method: id ? 'PUT' : 'POST', body: payload });
     $('#product-dialog').close();
+    showToast(id ? 'Producto actualizado.' : 'Producto creado.');
     await Promise.all([loadProducts(), loadDashboard()]);
   } catch (error) { message(form, error.message); }
 });
@@ -197,13 +211,13 @@ $('#products-table').addEventListener('click', async (event) => {
   const togglePriceId = event.target.dataset.togglePrice;
   if (editId) openProduct(state.products.find((product) => product.id === Number(editId)));
   if (toggleProductId) {
-    try { await api(`/api/admin/products/${toggleProductId}/visibility`, { method: 'PATCH' }); await Promise.all([loadProducts(), loadDashboard()]); } catch (error) { alert(error.message); }
+    try { const data=await api(`/api/admin/products/${toggleProductId}/visibility`, { method: 'PATCH' }); showToast(data.availability==='hidden'?'Producto ocultado.':'Producto visible nuevamente.'); await Promise.all([loadProducts(), loadDashboard()]); } catch (error) { showToast(error.message,'error'); }
   }
   if (togglePriceId) {
-    try { await api(`/api/admin/products/${togglePriceId}/price-visibility`, { method: 'PATCH' }); await loadProducts(); } catch (error) { alert(error.message); }
+    try { const data=await api(`/api/admin/products/${togglePriceId}/price-visibility`, { method: 'PATCH' }); showToast(data.show_price?'Precio visible nuevamente.':'Precio ocultado.'); await loadProducts(); } catch (error) { showToast(error.message,'error'); }
   }
   if (deleteId && confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) {
-    try { await api(`/api/admin/products/${deleteId}`, { method: 'DELETE' }); await Promise.all([loadProducts(), loadDashboard()]); } catch (error) { alert(error.message); }
+    try { await api(`/api/admin/products/${deleteId}`, { method: 'DELETE' }); showToast('Producto eliminado.'); await Promise.all([loadProducts(), loadDashboard()]); } catch (error) { showToast(error.message,'error'); }
   }
 });
 
@@ -214,7 +228,7 @@ $('#category-form').addEventListener('submit', async (event) => {
   const id = data.id;
   try {
     await api(id ? `/api/admin/categories/${id}` : '/api/admin/categories', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    form.reset(); form.elements.id.value = ''; $('#cancel-category').hidden = true; message(form, 'Categoría guardada.', true);
+    form.reset(); form.elements.id.value = ''; $('#cancel-category').hidden = true; message(form, ''); showToast(id ? 'Categoría actualizada y orden reorganizado.' : 'Categoría creada y orden reorganizado.');
     await Promise.all([loadCategories(), loadProducts()]);
   } catch (error) { message(form, error.message); }
 });
@@ -227,7 +241,7 @@ $('#category-list').addEventListener('click', async (event) => {
     const form = $('#category-form'); form.elements.id.value = category.id; form.elements.name.value = category.name; form.elements.sort_order.value = category.sort_order; $('#cancel-category').hidden = false;
   }
   if (deleteId && confirm('¿Eliminar esta categoría?')) {
-    try { await api(`/api/admin/categories/${deleteId}`, { method: 'DELETE' }); await loadCategories(); } catch (error) { alert(error.message); }
+    try { await api(`/api/admin/categories/${deleteId}`, { method: 'DELETE' }); showToast('Categoría eliminada y orden reorganizado.'); await loadCategories(); } catch (error) { showToast(error.message,'error'); }
   }
 });
 
@@ -239,13 +253,13 @@ function renderOrders() {
   const filter = $('#order-filter').value;
   const labels = { pending: 'Pendiente', confirmed: 'Confirmado', completed: 'Completado', cancelled: 'Cancelado' };
   const orders = state.orders.filter((order) => !filter || order.status === filter);
-  $('#orders-list').innerHTML = orders.map((order) => `<article class="order-card"><div class="order-summary"><strong>#${String(order.id).padStart(4, '0')}</strong><div><strong>${escapeHtml(order.customer_name)}</strong><small>${new Date(`${order.created_at}Z`).toLocaleString('es-EC')}</small></div><strong class="order-total">${money(order.total)}</strong><select class="order-status status ${order.status}" data-order-status="${order.id}">${Object.entries(labels).map(([value, label]) => `<option value="${value}" ${value === order.status ? 'selected' : ''}>${label}</option>`).join('')}</select></div><details><summary>Ver ${order.items.length} producto(s)</summary><div class="order-items">${order.items.map((item) => `<div class="order-item"><span>${item.quantity} × ${escapeHtml(item.product_name)}</span><strong>${money(item.subtotal)}</strong></div>`).join('')}</div><div class="order-meta"><strong>Teléfono:</strong> ${escapeHtml(order.phone)}<br><strong>Correo:</strong> ${escapeHtml(order.email || 'No indicado')}<br><strong>Dirección:</strong> ${escapeHtml(order.address || 'No indicada')}<br><strong>Notas:</strong> ${escapeHtml(order.notes || 'Sin notas')}</div></details></article>`).join('') || '<div class="welcome-card">No hay ventas en este estado.</div>';
+  $('#orders-list').innerHTML = orders.map((order) => `<article class="order-card sale-card"><div class="order-summary"><strong>#${String(order.id).padStart(4, '0')}</strong><div><strong>${escapeHtml(order.customer_name)}</strong><small>${new Date(order.created_at).toLocaleString('es-EC')}</small></div><div class="order-grand-total"><small>Total del pedido</small><strong class="order-total">${money(order.total)}</strong></div><select class="order-status status ${order.status}" data-order-status="${order.id}">${Object.entries(labels).map(([value, label]) => `<option value="${value}" ${value === order.status ? 'selected' : ''}>${label}</option>`).join('')}</select></div><details><summary>Ver ${order.items.length} producto(s)</summary><div class="order-items order-items-detailed"><div class="order-item order-item-head"><span>Producto</span><span>Cantidad</span><span>Precio unitario</span><span>Total</span></div>${order.items.map((item) => `<div class="order-item"><span>${escapeHtml(item.product_name)}</span><span>${item.quantity}</span><span>${money(item.unit_price)}</span><strong>${money(item.subtotal)}</strong></div>`).join('')}</div><div class="order-meta"><strong>Teléfono:</strong> ${escapeHtml(order.phone)}<br><strong>Correo:</strong> ${escapeHtml(order.email || 'No indicado')}<br><strong>Dirección:</strong> ${escapeHtml(order.address || 'No indicada')}<br><strong>Notas:</strong> ${escapeHtml(order.notes || 'Sin notas')}</div></details></article>`).join('') || '<div class="welcome-card">No hay ventas en este estado.</div>';
 }
 $('#order-filter').addEventListener('change', renderOrders);
 $('#refresh-orders').addEventListener('click', loadOrders);
 $('#orders-list').addEventListener('change', async (event) => {
   if (!event.target.dataset.orderStatus) return;
-  try { await api(`/api/admin/orders/${event.target.dataset.orderStatus}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: event.target.value }) }); await Promise.all([loadOrders(), loadDashboard()]); } catch (error) { alert(error.message); }
+  try { await api(`/api/admin/orders/${event.target.dataset.orderStatus}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: event.target.value }) }); showToast('Estado de la venta actualizado.'); await Promise.all([loadOrders(), loadDashboard()]); } catch (error) { showToast(error.message,'error'); }
 });
 
 async function loadQuotes() {
@@ -256,18 +270,18 @@ function renderQuotes() {
   const filter = $('#quote-filter').value;
   const labels = { new: 'Nueva', reviewing: 'En revisión', answered: 'Respondida', discarded: 'Descartada' };
   const quotes = state.quotes.filter((quote) => !filter || quote.status === filter);
-  $('#quotes-list').innerHTML = quotes.map((quote) => `<article class="order-card"><div class="order-summary"><strong>#C${String(quote.id).padStart(4, '0')}</strong><div><strong>${escapeHtml(quote.customer_name)}</strong><small>${new Date(`${quote.created_at}Z`).toLocaleString('es-EC')} · ${escapeHtml(quote.product)}</small></div><div class="quote-actions"><a href="mailto:${escapeHtml(quote.email)}?subject=${encodeURIComponent(`Cotización Maconta Plast #${quote.id}`)}">Responder</a><button data-delete-quote="${quote.id}">Eliminar</button></div><select class="order-status status ${quote.status}" data-quote-status="${quote.id}">${Object.entries(labels).map(([value, label]) => `<option value="${value}" ${value === quote.status ? 'selected' : ''}>${label}</option>`).join('')}</select></div><details><summary>Ver solicitud</summary><div class="order-meta"><strong>Correo:</strong> ${escapeHtml(quote.email)}<br><strong>Teléfono:</strong> ${escapeHtml(quote.phone || 'No indicado')}<br><strong>Producto:</strong> ${escapeHtml(quote.product)}<br><strong>Mensaje:</strong> ${escapeHtml(quote.message || 'Sin detalles adicionales')}</div></details></article>`).join('') || '<div class="welcome-card">No hay cotizaciones en este estado.</div>';
+  $('#quotes-list').innerHTML = quotes.map((quote) => { const phone=String(quote.phone||'').replace(/\D/g,''); return `<article class="order-card quote-card"><div class="quote-card-top"><div><span class="quote-number">#C${String(quote.id).padStart(4, '0')}</span><strong>${escapeHtml(quote.customer_name)}</strong><small>${new Date(quote.created_at).toLocaleString('es-EC')}</small></div><select class="order-status status ${quote.status}" data-quote-status="${quote.id}">${Object.entries(labels).map(([value, label]) => `<option value="${value}" ${value === quote.status ? 'selected' : ''}>${label}</option>`).join('')}</select></div><div class="quote-product"><small>PRODUCTO SOLICITADO</small><strong>${escapeHtml(quote.product)}</strong><p>${escapeHtml(quote.message || 'Sin detalles adicionales')}</p></div><div class="quote-contact"><span>${escapeHtml(quote.email)}</span><span>${escapeHtml(quote.phone || 'Sin teléfono')}</span></div><div class="quote-actions"><a href="mailto:${escapeHtml(quote.email)}?subject=${encodeURIComponent(`Cotización Maconta Plast #${quote.id}`)}">Responder por correo</a>${phone?`<a class="whatsapp-action" href="https://wa.me/${phone}" target="_blank" rel="noopener">WhatsApp</a>`:''}<button data-delete-quote="${quote.id}">Eliminar</button></div></article>`; }).join('') || '<div class="welcome-card">No hay cotizaciones en este estado.</div>';
 }
 $('#quote-filter').addEventListener('change', renderQuotes);
 $('#refresh-quotes').addEventListener('click', loadQuotes);
 $('#quotes-list').addEventListener('change', async (event) => {
   if (!event.target.dataset.quoteStatus) return;
-  try { await api(`/api/admin/quotes/${event.target.dataset.quoteStatus}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: event.target.value }) }); await Promise.all([loadQuotes(), loadDashboard()]); } catch (error) { alert(error.message); }
+  try { await api(`/api/admin/quotes/${event.target.dataset.quoteStatus}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: event.target.value }) }); showToast('Estado de la cotización actualizado.'); await Promise.all([loadQuotes(), loadDashboard()]); } catch (error) { showToast(error.message,'error'); }
 });
 $('#quotes-list').addEventListener('click', async (event) => {
   const id = event.target.dataset.deleteQuote;
   if (!id || !confirm('¿Eliminar esta cotización?')) return;
-  try { await api(`/api/admin/quotes/${id}`, { method: 'DELETE' }); await Promise.all([loadQuotes(), loadDashboard()]); } catch (error) { alert(error.message); }
+  try { await api(`/api/admin/quotes/${id}`, { method: 'DELETE' }); showToast('Cotización eliminada.'); await Promise.all([loadQuotes(), loadDashboard()]); } catch (error) { showToast(error.message,'error'); }
 });
 
 const movementLabels = { purchase: 'Compra', sale: 'Venta', damage: 'Daño', correction: 'Corrección' };
@@ -281,27 +295,32 @@ function updateMovementReasons() {
   form.elements.reason.innerHTML = reasons.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
 }
 $('#inventory-form [name=direction]').addEventListener('change', updateMovementReasons);
+$$('[data-inventory-tab]').forEach((button) => button.addEventListener('click', () => {
+  $$('[data-inventory-tab]').forEach((item) => item.classList.toggle('active', item === button));
+  $$('.inventory-panel').forEach((panel) => panel.classList.toggle('active', panel.id === `inventory-${button.dataset.inventoryTab}`));
+}));
 function fillInventoryProducts(products = state.products) {
   const select = $('#inventory-form').elements.product_id;
   select.innerHTML = `<option value="">Selecciona un producto</option>${products.map((product) => `<option value="${product.id}">${escapeHtml(product.name)} · stock ${product.stock}</option>`).join('')}`;
 }
 async function loadInventory() {
   fillInventoryProducts();
-  try { state.inventory = await api('/api/admin/inventory'); } catch (error) { $('#stock-alerts').innerHTML = `<div class="inventory-error"><strong>No se pudo cargar el historial.</strong><span>${escapeHtml(error.message)}</span></div>`; return; }
+  try { state.inventory = await api('/api/admin/inventory'); } catch (error) { const notice=`<div class="inventory-error"><strong>No se pudo cargar el inventario.</strong><span>${escapeHtml(error.message)}</span></div>`;$('#stock-alerts').innerHTML=notice;$('#final-stock-table').innerHTML=`<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`;$('#inventory-movements').innerHTML=`<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;showToast(error.message,'error');return; }
   fillInventoryProducts(state.inventory.products);
+  $('#final-stock-table').innerHTML = state.inventory.products.map((product) => `<tr><td data-label="Producto"><strong>${escapeHtml(product.name)}</strong></td><td data-label="Categoría">${escapeHtml(product.category_name)}</td><td data-label="Stock final"><strong>${product.track_inventory ? product.stock : 'Sin control'}</strong></td><td data-label="Stock mínimo">${product.track_inventory ? product.min_stock : '—'}</td><td data-label="Estado"><span class="status ${product.low_stock ? 'out_of_stock' : 'available'}">${!product.track_inventory ? 'No controlado' : product.low_stock ? 'Stock bajo' : 'Correcto'}</span></td><td data-label="Valor">${product.track_inventory ? money(product.stock * product.price) : '—'}</td></tr>`).join('');
   const low = state.inventory.products.filter((product) => product.low_stock);
   $('#stock-alerts').innerHTML = low.length ? `<div class="alert-heading"><span>ALERTAS DE STOCK</span><strong>${low.length} producto(s) requieren atención</strong></div>${low.map((product) => `<article><div><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.category_name)}</small></div><span>${product.stock} / mínimo ${product.min_stock}</span></article>`).join('')}` : '<div class="stock-ok">✓ Todo el inventario está sobre el mínimo.</div>';
   $('#inventory-movements').innerHTML = state.inventory.movements.map((movement) => `<tr><td data-label="Fecha">${new Date(movement.created_at).toLocaleString('es-EC')}</td><td data-label="Producto"><strong>${escapeHtml(movement.product_name)}</strong><small>${escapeHtml(movement.notes || '')}</small></td><td data-label="Movimiento"><span class="movement ${movement.quantity_change > 0 ? 'in' : 'out'}">${movement.quantity_change > 0 ? '+' : ''}${movement.quantity_change}</span></td><td data-label="Motivo">${movementLabels[movement.reason] || movement.reason}</td><td data-label="Existencia">${movement.stock_before} → ${movement.stock_after}</td></tr>`).join('') || '<tr><td colspan="5">Todavía no hay movimientos.</td></tr>';
 }
 $('#inventory-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
-  try { const data = await api('/api/admin/inventory/movements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); form.reset(); updateMovementReasons(); message(form, data.message, true); await Promise.all([loadInventory(), loadProducts(), loadDashboard()]); } catch (error) { message(form, error.message); }
+  try { const data = await api('/api/admin/inventory/movements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); form.reset(); updateMovementReasons(); message(form, ''); showToast(data.message); await Promise.all([loadInventory(), loadProducts(), loadDashboard()]); } catch (error) { message(form, ''); showToast(error.message, 'error'); }
 });
 
 function renderCustomers() {
   const search = $('#customer-search').value.trim().toLowerCase();
   const customers = state.customers.filter((customer) => !search || `${customer.name} ${customer.email} ${customer.phone} ${customer.tax_id}`.toLowerCase().includes(search));
-  $('#customers-list').innerHTML = customers.map((customer) => { const phone=String(customer.phone||'').replace(/\D/g,''); return `<article class="customer-card"><div class="customer-avatar">${escapeHtml(customer.name.charAt(0).toUpperCase())}</div><div><strong>${escapeHtml(customer.name)}</strong><small>${escapeHtml(customer.tax_id || 'Sin RUC/Cédula')}</small><a href="mailto:${escapeHtml(customer.email)}">${escapeHtml(customer.email || 'Sin correo')}</a><span>${escapeHtml(customer.phone || 'Sin teléfono')}</span></div><div class="customer-stats"><span><b>${customer.order_count}</b> pedidos</span><span><b>${customer.quote_count}</b> cotizaciones</span><span><b>${money(customer.total_spent)}</b> vendido</span></div><div class="actions"><button data-edit-customer="${customer.id}">Ver ficha</button>${phone?`<a class="whatsapp-action" href="https://wa.me/${phone}" target="_blank" rel="noopener">WhatsApp</a>`:''}</div></article>`; }).join('') || '<div class="welcome-card">No hay clientes que coincidan.</div>';
+  $('#customers-list').innerHTML = customers.map((customer) => { const phone=String(customer.phone||'').replace(/\D/g,''); return `<article class="customer-card"><div class="customer-avatar">${escapeHtml(customer.name.charAt(0).toUpperCase())}</div><div><strong>${escapeHtml(customer.name)}</strong><small>${escapeHtml(customer.tax_id || 'Sin RUC/Cédula')}</small><a href="mailto:${escapeHtml(customer.email)}">${escapeHtml(customer.email || 'Sin correo')}</a><span>${escapeHtml(customer.phone || 'Sin teléfono')}</span></div><div class="customer-address"><span>${escapeHtml(customer.address || 'Sin dirección registrada')}</span><small>${customer.last_order ? `Última compra: ${new Date(customer.last_order).toLocaleDateString('es-EC')}` : 'Sin compras todavía'}</small></div><div class="customer-stats"><span><b>${customer.order_count}</b> pedidos</span><span><b>${customer.quote_count}</b> cotizaciones</span><span><b>${money(customer.total_spent)}</b> vendido</span></div><div class="actions"><button data-edit-customer="${customer.id}">Ver ficha</button>${phone?`<a class="whatsapp-action" href="https://wa.me/${phone}" target="_blank" rel="noopener">WhatsApp</a>`:''}</div></article>`; }).join('') || '<div class="welcome-card">No hay clientes que coincidan.</div>';
 }
 async function loadCustomers() { state.customers = await api('/api/admin/customers'); renderCustomers(); }
 $('#customer-search').addEventListener('input', renderCustomers);
@@ -312,7 +331,7 @@ async function openCustomer(customerId = null) {
 }
 $('#new-customer').addEventListener('click',()=>openCustomer());$('#close-customer').addEventListener('click',()=>$('#customer-dialog').close());
 $('#customers-list').addEventListener('click',(event)=>{const id=event.target.dataset.editCustomer;if(id)openCustomer(id);});
-$('#customer-form').addEventListener('submit',async(event)=>{event.preventDefault();const form=event.currentTarget,data=Object.fromEntries(new FormData(form)),id=data.id;try{await api(id?`/api/admin/customers/${id}`:'/api/admin/customers',{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});$('#customer-dialog').close();await loadCustomers();}catch(error){message(form,error.message);}});
+$('#customer-form').addEventListener('submit',async(event)=>{event.preventDefault();const form=event.currentTarget,data=Object.fromEntries(new FormData(form)),id=data.id;try{await api(id?`/api/admin/customers/${id}`:'/api/admin/customers',{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});$('#customer-dialog').close();showToast(id?'Ficha del cliente actualizada.':'Cliente agregado.');await loadCustomers();}catch(error){message(form,'');showToast(error.message,'error');}});
 
 async function loadReports(){
   const data=await api('/api/admin/reports');state.reports=data;$('#report-sales').textContent=money(data.summary.sales);$('#report-orders').textContent=data.summary.orders;$('#report-inventory').textContent=money(data.summary.inventory_value);$('#report-low-stock').textContent=data.summary.low_stock;
@@ -335,15 +354,15 @@ async function loadSettings() {
 }
 $('#settings-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
-  try { const payload = Object.fromEntries(new FormData(form)); payload.quote_enabled = String(form.elements.quote_enabled.checked); payload.prices_visible = String(form.elements.prices_visible.checked); const data = await api('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); state.adminEmail = form.elements.admin_email.value; $('#admin-email').textContent = state.adminEmail; message(form, data.message, true); } catch (error) { message(form, error.message); }
+  try { const payload = Object.fromEntries(new FormData(form)); payload.quote_enabled = String(form.elements.quote_enabled.checked); payload.prices_visible = String(form.elements.prices_visible.checked); const data = await api('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); state.adminEmail = form.elements.admin_email.value; $('#admin-email').textContent = state.adminEmail; message(form, ''); showToast(data.message); } catch (error) { message(form,''); showToast(error.message,'error'); }
 });
 $('#about-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
-  try { const data = await api('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); message(form, data.message, true); } catch (error) { message(form, error.message); }
+  try { const data = await api('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); message(form,''); showToast(data.message); } catch (error) { message(form,''); showToast(error.message,'error'); }
 });
 $('#password-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
-  try { const data = await api('/api/admin/password', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); form.reset(); message(form, data.message, true); } catch (error) { message(form, error.message); }
+  try { const data = await api('/api/admin/password', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); form.reset(); message(form,''); showToast(data.message); } catch (error) { message(form,''); showToast(error.message,'error'); }
 });
 
 (async function init() {

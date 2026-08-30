@@ -61,6 +61,11 @@ function slugify(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+async function normalizeCategoryOrder(database = pool) {
+  const rows = (await database.query('SELECT id FROM categories ORDER BY sort_order,id')).rows;
+  for (let index = 0; index < rows.length; index += 1) await database.query('UPDATE categories SET sort_order=$1 WHERE id=$2', [index + 1, rows[index].id]);
+}
+
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
   return `${salt}:${crypto.scryptSync(password, salt, 64).toString('hex')}`;
 }
@@ -239,6 +244,8 @@ async function initializeDatabase() {
     }
   }
 
+  await normalizeCategoryOrder();
+
   const legacyOrders = (await pool.query('SELECT * FROM orders WHERE customer_id IS NULL')).rows;
   await pool.query(`INSERT INTO inventory_movements (product_id,movement_type,quantity_change,stock_before,stock_after,reason,notes)
     SELECT products.id,'adjustment',products.stock,0,products.stock,'correction','Existencia inicial migrada' FROM products
@@ -371,18 +378,16 @@ app.get('/api/admin/categories', requireAdmin, async (_request, response) => res
 app.post('/api/admin/categories', requireAdmin, async (request, response) => {
   const name = String(request.body.name || '').trim(); const slug = slugify(request.body.slug || name);
   if (!name || !slug) return response.status(400).json({ error: 'La categoría necesita un nombre.' });
-  try { const row = (await pool.query('INSERT INTO categories (name,slug,sort_order) VALUES ($1,$2,$3) RETURNING *', [name, slug, Number(request.body.sort_order) || 0])).rows[0]; response.status(201).json({ ...row, id: Number(row.id) }); }
-  catch (error) { if (error.code === '23505') return response.status(409).json({ error: 'Ya existe esa categoría.' }); throw error; }
+  const client=await pool.connect();try{await client.query('BEGIN');await normalizeCategoryOrder(client);const count=Number((await client.query('SELECT COUNT(*) AS total FROM categories')).rows[0].total),desired=Math.min(Math.max(1,Number.parseInt(request.body.sort_order,10)||count+1),count+1);await client.query('UPDATE categories SET sort_order=sort_order+1 WHERE sort_order>=$1',[desired]);const row=(await client.query('INSERT INTO categories (name,slug,sort_order) VALUES ($1,$2,$3) RETURNING *',[name,slug,desired])).rows[0];await client.query('COMMIT');response.status(201).json({...row,id:Number(row.id)});}catch(error){await client.query('ROLLBACK');if(error.code==='23505')return response.status(409).json({error:'Ya existe esa categoría.'});throw error;}finally{client.release();}
 });
 app.put('/api/admin/categories/:id', requireAdmin, async (request, response) => {
   const name = String(request.body.name || '').trim(); const slug = slugify(request.body.slug || name);
-  try { const result = await pool.query('UPDATE categories SET name=$1,slug=$2,sort_order=$3 WHERE id=$4 RETURNING id', [name, slug, Number(request.body.sort_order) || 0, request.params.id]); if (!result.rowCount) return response.status(404).json({ error: 'Categoría no encontrada.' }); response.json({ message: 'Categoría actualizada.' }); }
-  catch (error) { if (error.code === '23505') return response.status(409).json({ error: 'Nombre o identificador duplicado.' }); throw error; }
+  const client=await pool.connect();try{await client.query('BEGIN');await normalizeCategoryOrder(client);const current=(await client.query('SELECT * FROM categories WHERE id=$1 FOR UPDATE',[request.params.id])).rows[0];if(!current){await client.query('ROLLBACK');return response.status(404).json({error:'Categoría no encontrada.'});}const count=Number((await client.query('SELECT COUNT(*) AS total FROM categories')).rows[0].total),desired=Math.min(Math.max(1,Number.parseInt(request.body.sort_order,10)||Number(current.sort_order)),count),old=Number(current.sort_order);if(desired<old)await client.query('UPDATE categories SET sort_order=sort_order+1 WHERE sort_order>=$1 AND sort_order<$2 AND id!=$3',[desired,old,current.id]);if(desired>old)await client.query('UPDATE categories SET sort_order=sort_order-1 WHERE sort_order>$1 AND sort_order<=$2 AND id!=$3',[old,desired,current.id]);await client.query('UPDATE categories SET name=$1,slug=$2,sort_order=$3 WHERE id=$4',[name,slug,desired,current.id]);await client.query('COMMIT');response.json({message:'Categoría actualizada.'});}catch(error){await client.query('ROLLBACK');if(error.code==='23505')return response.status(409).json({error:'Nombre o identificador duplicado.'});throw error;}finally{client.release();}
 });
 app.delete('/api/admin/categories/:id', requireAdmin, async (request, response) => {
   const used = Number((await pool.query('SELECT COUNT(*) AS total FROM products WHERE category_id=$1', [request.params.id])).rows[0].total);
   if (used) return response.status(409).json({ error: 'Mueve los productos antes de eliminar la categoría.' });
-  await pool.query('DELETE FROM categories WHERE id=$1', [request.params.id]); response.status(204).end();
+  await pool.query('DELETE FROM categories WHERE id=$1', [request.params.id]); await normalizeCategoryOrder(); response.status(204).end();
 });
 
 app.get('/api/admin/products', requireAdmin, async (_request, response) => response.json((await pool.query(`${productSelect} ORDER BY products.sort_order,products.id`)).rows.map(mapProduct)));
@@ -475,12 +480,12 @@ app.patch('/api/admin/quotes/:id', requireAdmin, async (request,response)=>{if(!
 app.delete('/api/admin/quotes/:id', requireAdmin, async (request,response)=>{await pool.query('DELETE FROM quotes WHERE id=$1',[request.params.id]);response.status(204).end();});
 
 app.get('/api/admin/inventory', requireAdmin, async (_request,response)=>{
-  const products=(await pool.query(`SELECT products.id,products.name,products.stock,products.min_stock,products.track_inventory,products.availability,categories.name AS category_name
+  const products=(await pool.query(`SELECT products.id,products.name,products.price,products.stock,products.min_stock,products.track_inventory,products.availability,categories.name AS category_name
     FROM products JOIN categories ON categories.id=products.category_id ORDER BY (products.track_inventory AND products.stock<=products.min_stock) DESC,products.stock,products.name`)).rows;
   const movements=(await pool.query(`SELECT inventory_movements.*,products.name AS product_name,admins.email AS admin_email
     FROM inventory_movements JOIN products ON products.id=inventory_movements.product_id LEFT JOIN admins ON admins.id=inventory_movements.admin_id
     ORDER BY inventory_movements.created_at DESC,inventory_movements.id DESC LIMIT 300`)).rows;
-  response.json({products:products.map((row)=>({...row,id:Number(row.id),stock:Number(row.stock),min_stock:Number(row.min_stock),low_stock:row.track_inventory&&Number(row.stock)<=Number(row.min_stock)})),movements:movements.map((row)=>({...row,id:Number(row.id),product_id:Number(row.product_id),quantity_change:Number(row.quantity_change),stock_before:Number(row.stock_before),stock_after:Number(row.stock_after)}))});
+  response.json({products:products.map((row)=>({...row,id:Number(row.id),price:Number(row.price),stock:Number(row.stock),min_stock:Number(row.min_stock),low_stock:row.track_inventory&&Number(row.stock)<=Number(row.min_stock)})),movements:movements.map((row)=>({...row,id:Number(row.id),product_id:Number(row.product_id),quantity_change:Number(row.quantity_change),stock_before:Number(row.stock_before),stock_after:Number(row.stock_after)}))});
 });
 
 app.post('/api/admin/inventory/movements',requireAdmin,async(request,response)=>{
