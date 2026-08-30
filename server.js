@@ -36,7 +36,23 @@ const defaults = {
   whatsapp_message: 'Hola, quiero información sobre los productos de Maconta Plast.',
   quote_enabled: 'true',
   quote_title: 'Tu próximo proyecto empieza aquí.',
-  quote_description: 'Solicita atención personalizada para compras por volumen, medidas especiales o necesidades empresariales.'
+  quote_description: 'Solicita atención personalizada para compras por volumen, medidas especiales o necesidades empresariales.',
+  prices_visible: 'true',
+  about_kicker: 'POR QUÉ MACONTA PLAST',
+  about_title: 'Más que plástico, una alianza.',
+  about_description: 'Entendemos que detrás de cada pedido hay una operación que no puede detenerse. Por eso combinamos experiencia, inventario y servicio para darte respuestas claras.',
+  about_stat_1_value: '12',
+  about_stat_1_suffix: '+',
+  about_stat_1_label: 'Años de experiencia',
+  about_stat_2_value: '250',
+  about_stat_2_suffix: '+',
+  about_stat_2_label: 'Clientes atendidos',
+  about_stat_3_value: '98',
+  about_stat_3_suffix: '%',
+  about_stat_3_label: 'Entregas a tiempo',
+  about_stat_4_value: '24',
+  about_stat_4_suffix: 'h',
+  about_stat_4_label: 'Respuesta comercial'
 };
 
 function slugify(value) {
@@ -61,7 +77,18 @@ function cookieToken(request) {
 }
 
 function mapProduct(row) {
-  return row ? { ...row, id: Number(row.id), category_id: Number(row.category_id), price: Number(row.price), stock: Number(row.stock), sort_order: Number(row.sort_order) } : row;
+  return row ? { ...row, id: Number(row.id), category_id: Number(row.category_id), price: Number(row.price), sale_price: row.sale_price === null ? null : Number(row.sale_price), stock: Number(row.stock), sort_order: Number(row.sort_order) } : row;
+}
+
+function saleIsActive(product, now = new Date()) {
+  if (product.sale_price === null || product.sale_price >= product.price) return false;
+  const starts = product.sale_start ? new Date(product.sale_start) : null;
+  const ends = product.sale_end ? new Date(product.sale_end) : null;
+  return (!starts || starts <= now) && (!ends || ends >= now);
+}
+
+function effectiveProductPrice(product) {
+  return saleIsActive(product) ? product.sale_price : product.price;
 }
 
 async function initializeDatabase() {
@@ -91,6 +118,12 @@ async function initializeDatabase() {
       label TEXT NOT NULL DEFAULT '',
       description TEXT NOT NULL DEFAULT '',
       price NUMERIC(12,3) NOT NULL DEFAULT 0 CHECK(price >= 0),
+      sale_price NUMERIC(12,3) CHECK(sale_price IS NULL OR sale_price >= 0),
+      sale_start TIMESTAMPTZ,
+      sale_end TIMESTAMPTZ,
+      tax_status TEXT NOT NULL DEFAULT 'taxable' CHECK(tax_status IN ('taxable','none')),
+      tax_class TEXT NOT NULL DEFAULT 'standard' CHECK(tax_class IN ('standard','zero','exempt')),
+      show_price BOOLEAN NOT NULL DEFAULT TRUE,
       image TEXT NOT NULL DEFAULT '',
       alt TEXT NOT NULL DEFAULT '',
       stock INTEGER NOT NULL DEFAULT 0 CHECK(stock >= 0),
@@ -130,6 +163,12 @@ async function initializeDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS show_price BOOLEAN NOT NULL DEFAULT TRUE;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_price NUMERIC(12,3) CHECK(sale_price IS NULL OR sale_price >= 0);
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_start TIMESTAMPTZ;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_end TIMESTAMPTZ;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS tax_status TEXT NOT NULL DEFAULT 'taxable';
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS tax_class TEXT NOT NULL DEFAULT 'standard';
     CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
     CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_quotes_created ON quotes(created_at DESC);
@@ -212,7 +251,18 @@ app.get('/api/store', async (_request, response) => {
     pool.query(`${productSelect} WHERE products.availability!='hidden' ORDER BY products.sort_order,products.id`),
     publicSettings()
   ]);
-  response.json({ categories: categories.rows.map((row) => ({ ...row, id: Number(row.id), sort_order: Number(row.sort_order) })), products: products.rows.map(mapProduct), settings });
+  const publicProducts = products.rows.map(mapProduct).map((product) => {
+    const saleActive = saleIsActive(product);
+    const visible = settings.prices_visible === 'true' && product.show_price;
+    return {
+      ...product,
+      price: visible ? effectiveProductPrice(product) : null,
+      regular_price: visible && saleActive ? product.price : null,
+      sale_price: visible && saleActive ? product.sale_price : null,
+      sale_active: saleActive
+    };
+  });
+  response.json({ categories: categories.rows.map((row) => ({ ...row, id: Number(row.id), sort_order: Number(row.sort_order) })), products: publicProducts, settings });
 });
 
 app.get('/api/auth/status', async (_request, response) => response.json({ setupRequired: Number((await pool.query('SELECT COUNT(*) AS total FROM admins')).rows[0].total) === 0 }));
@@ -274,18 +324,35 @@ app.delete('/api/admin/categories/:id', requireAdmin, async (request, response) 
 app.get('/api/admin/products', requireAdmin, async (_request, response) => response.json((await pool.query(`${productSelect} ORDER BY products.sort_order,products.id`)).rows.map(mapProduct)));
 
 function productFields(request, existing = {}) {
-  return { name: String(request.body.name || '').trim(), categoryId: Number(request.body.category_id), label: String(request.body.label || '').trim(), description: String(request.body.description || '').trim(), price: Number(request.body.price), image: request.file ? `images/uploads/${request.file.filename}` : String(request.body.image || existing.image || ''), alt: String(request.body.alt || request.body.name || '').trim(), stock: Math.max(0, Number.parseInt(request.body.stock, 10) || 0), availability: ['available', 'out_of_stock', 'hidden'].includes(request.body.availability) ? request.body.availability : 'available', sortOrder: Number.parseInt(request.body.sort_order, 10) || 0 };
+  const salePrice = request.body.sale_price === '' || request.body.sale_price === undefined ? null : Number(request.body.sale_price);
+  const saleStart = request.body.sale_start ? new Date(request.body.sale_start) : null;
+  const saleEnd = request.body.sale_end ? new Date(request.body.sale_end) : null;
+  return { name: String(request.body.name || '').trim(), categoryId: Number(request.body.category_id), label: String(request.body.label || '').trim(), description: String(request.body.description || '').trim(), price: Number(request.body.price), salePrice, saleStart: saleStart && !Number.isNaN(saleStart.valueOf()) ? saleStart.toISOString() : null, saleEnd: saleEnd && !Number.isNaN(saleEnd.valueOf()) ? saleEnd.toISOString() : null, taxStatus: ['taxable','none'].includes(request.body.tax_status) ? request.body.tax_status : 'taxable', taxClass: ['standard','zero','exempt'].includes(request.body.tax_class) ? request.body.tax_class : 'standard', showPrice: request.body.show_price === 'true' || request.body.show_price === 'on', image: request.file ? `images/uploads/${request.file.filename}` : String(request.body.image || existing.image || ''), alt: String(request.body.alt || request.body.name || '').trim(), stock: Math.max(0, Number.parseInt(request.body.stock, 10) || 0), availability: ['available', 'out_of_stock', 'hidden'].includes(request.body.availability) ? request.body.availability : 'available', sortOrder: Number.parseInt(request.body.sort_order, 10) || 0 };
 }
 app.post('/api/admin/products', requireAdmin, upload.single('image_file'), async (request, response) => {
   const p = productFields(request); if (!p.name || !p.categoryId || !Number.isFinite(p.price) || p.price < 0) return response.status(400).json({ error: 'Completa nombre, categoría y precio.' });
-  const row = (await pool.query(`INSERT INTO products (name,category_id,label,description,price,image,alt,stock,availability,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`, [p.name,p.categoryId,p.label,p.description,p.price,p.image,p.alt,p.stock,p.availability,p.sortOrder])).rows[0];
+  if (p.salePrice !== null && (!Number.isFinite(p.salePrice) || p.salePrice < 0 || p.salePrice >= p.price)) return response.status(400).json({ error: 'El precio rebajado debe ser menor que el precio normal.' });
+  if (p.saleStart && p.saleEnd && p.saleEnd <= p.saleStart) return response.status(400).json({ error: 'La fecha final de la oferta debe ser posterior al inicio.' });
+  const row = (await pool.query(`INSERT INTO products (name,category_id,label,description,price,sale_price,sale_start,sale_end,tax_status,tax_class,show_price,image,alt,stock,availability,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`, [p.name,p.categoryId,p.label,p.description,p.price,p.salePrice,p.saleStart,p.saleEnd,p.taxStatus,p.taxClass,p.showPrice,p.image,p.alt,p.stock,p.availability,p.sortOrder])).rows[0];
   response.status(201).json({ id: Number(row.id) });
 });
 app.put('/api/admin/products/:id', requireAdmin, upload.single('image_file'), async (request, response) => {
   const existing = (await pool.query('SELECT * FROM products WHERE id=$1', [request.params.id])).rows[0]; if (!existing) return response.status(404).json({ error: 'Producto no encontrado.' });
   const p = productFields(request, existing); if (!p.name || !p.categoryId || !Number.isFinite(p.price) || p.price < 0) return response.status(400).json({ error: 'Completa nombre, categoría y precio.' });
-  await pool.query(`UPDATE products SET name=$1,category_id=$2,label=$3,description=$4,price=$5,image=$6,alt=$7,stock=$8,availability=$9,sort_order=$10,updated_at=NOW() WHERE id=$11`, [p.name,p.categoryId,p.label,p.description,p.price,p.image,p.alt,p.stock,p.availability,p.sortOrder,request.params.id]);
+  if (p.salePrice !== null && (!Number.isFinite(p.salePrice) || p.salePrice < 0 || p.salePrice >= p.price)) return response.status(400).json({ error: 'El precio rebajado debe ser menor que el precio normal.' });
+  if (p.saleStart && p.saleEnd && p.saleEnd <= p.saleStart) return response.status(400).json({ error: 'La fecha final de la oferta debe ser posterior al inicio.' });
+  await pool.query(`UPDATE products SET name=$1,category_id=$2,label=$3,description=$4,price=$5,sale_price=$6,sale_start=$7,sale_end=$8,tax_status=$9,tax_class=$10,show_price=$11,image=$12,alt=$13,stock=$14,availability=$15,sort_order=$16,updated_at=NOW() WHERE id=$17`, [p.name,p.categoryId,p.label,p.description,p.price,p.salePrice,p.saleStart,p.saleEnd,p.taxStatus,p.taxClass,p.showPrice,p.image,p.alt,p.stock,p.availability,p.sortOrder,request.params.id]);
   response.json({ message: 'Producto actualizado.' });
+});
+app.patch('/api/admin/products/:id/visibility', requireAdmin, async (request, response) => {
+  const result = await pool.query("UPDATE products SET availability=CASE WHEN availability='hidden' THEN 'available' ELSE 'hidden' END,updated_at=NOW() WHERE id=$1 RETURNING availability", [request.params.id]);
+  if (!result.rowCount) return response.status(404).json({ error: 'Producto no encontrado.' });
+  response.json({ availability: result.rows[0].availability });
+});
+app.patch('/api/admin/products/:id/price-visibility', requireAdmin, async (request, response) => {
+  const result = await pool.query('UPDATE products SET show_price=NOT show_price,updated_at=NOW() WHERE id=$1 RETURNING show_price', [request.params.id]);
+  if (!result.rowCount) return response.status(404).json({ error: 'Producto no encontrado.' });
+  response.json({ show_price: result.rows[0].show_price });
 });
 app.delete('/api/admin/products/:id', requireAdmin, async (request, response) => { await pool.query('DELETE FROM products WHERE id=$1', [request.params.id]); response.status(204).end(); });
 
@@ -300,12 +367,13 @@ app.post('/api/orders', orderLimiter, async (request, response) => {
       const quantity = Math.max(1, Number.parseInt(item.quantity, 10) || 1);
       if (!product) { const error = new Error('Uno de los productos ya no está disponible.'); error.status = 409; throw error; }
       if (product.stock > 0 && quantity > product.stock) { const error = new Error(`Solo quedan ${product.stock} unidades de ${product.name}.`); error.status = 409; throw error; }
-      normalized.push({ product, quantity, subtotal: Number((product.price * quantity).toFixed(3)) });
+      const unitPrice = effectiveProductPrice(product);
+      normalized.push({ product, unitPrice, quantity, subtotal: Number((unitPrice * quantity).toFixed(3)) });
     }
     const total = Number(normalized.reduce((sum, item) => sum + item.subtotal, 0).toFixed(3));
     const order = (await client.query(`INSERT INTO orders (customer_name,email,phone,address,notes,total) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`, [customerName,String(request.body.email||'').trim(),phone,String(request.body.address||'').trim(),String(request.body.notes||'').trim(),total])).rows[0];
     for (const item of normalized) {
-      await client.query('INSERT INTO order_items (order_id,product_id,product_name,unit_price,quantity,subtotal) VALUES ($1,$2,$3,$4,$5,$6)', [order.id,item.product.id,item.product.name,item.product.price,item.quantity,item.subtotal]);
+      await client.query('INSERT INTO order_items (order_id,product_id,product_name,unit_price,quantity,subtotal) VALUES ($1,$2,$3,$4,$5,$6)', [order.id,item.product.id,item.product.name,item.unitPrice,item.quantity,item.subtotal]);
       if (item.product.stock > 0) await client.query("UPDATE products SET stock=stock-$1,availability=CASE WHEN stock-$1<=0 THEN 'out_of_stock' ELSE availability END WHERE id=$2", [item.quantity,item.product.id]);
     }
     await client.query('COMMIT'); response.status(201).json({ id: Number(order.id), total, message: 'Pedido recibido.' });

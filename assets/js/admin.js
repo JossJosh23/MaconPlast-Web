@@ -4,6 +4,21 @@ const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)]
 const money = (value) => `$${Number(value).toFixed(Number(value) < 1 ? 3 : 2).replace(/0+$/, '').replace(/\.$/, '')}`;
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 
+function toLocalDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function saleState(product) {
+  if (product.sale_price === null || product.sale_price >= product.price) return 'none';
+  const now = Date.now();
+  if (product.sale_start && new Date(product.sale_start).getTime() > now) return 'scheduled';
+  if (product.sale_end && new Date(product.sale_end).getTime() < now) return 'expired';
+  return 'active';
+}
+
 async function api(url, options = {}) {
   let response;
   try {
@@ -110,13 +125,19 @@ function renderProducts() {
   const categoryId = Number($('#product-category-filter').value || 0);
   const products = state.products.filter((product) => (!search || `${product.name} ${product.description}`.toLowerCase().includes(search)) && (!categoryId || product.category_id === categoryId));
   const labels = { available: 'Disponible', out_of_stock: 'Agotado', hidden: 'Oculto' };
+  const priceMarkup = (product) => {
+    const offer = saleState(product);
+    if (offer === 'active') return `<span class="regular-price">${money(product.price)}</span><strong class="sale-price">${money(product.sale_price)}</strong><small>Oferta activa</small>`;
+    const note = offer === 'scheduled' ? 'Oferta programada' : offer === 'expired' ? 'Oferta vencida' : '';
+    return `<strong>${money(product.price)}</strong>${note ? `<small>${note}</small>` : ''}`;
+  };
   $('#products-table').innerHTML = products.map((product) => `<tr>
     <td data-label="Producto"><div class="product-cell"><img src="/${escapeHtml(product.image || 'images/catalogo/maconta-plast-logo-cropped.png')}" alt=""><div><strong>${escapeHtml(product.name)}</strong><small>Orden ${product.sort_order}</small></div></div></td>
     <td data-label="Categoría">${escapeHtml(product.category_name)}</td>
-    <td data-label="Precio"><strong>${money(product.price)}</strong></td>
+    <td data-label="Precio">${priceMarkup(product)}<small>${product.show_price ? 'Visible' : 'Oculto al público'}</small></td>
     <td data-label="Stock">${product.stock || 'Sin control'}</td>
     <td data-label="Estado"><span class="status ${product.availability}">${labels[product.availability]}</span></td>
-    <td data-label="Acciones"><div class="actions"><button data-edit-product="${product.id}">Editar</button><button class="delete" data-delete-product="${product.id}">Eliminar</button></div></td>
+    <td data-label="Acciones"><div class="actions product-actions"><button data-edit-product="${product.id}">Editar</button><button data-toggle-product="${product.id}">${product.availability === 'hidden' ? 'Mostrar producto' : 'Ocultar producto'}</button><button data-toggle-price="${product.id}">${product.show_price ? 'Ocultar precio' : 'Mostrar precio'}</button><button class="delete" data-delete-product="${product.id}">Eliminar</button></div></td>
   </tr>`).join('') || '<tr><td colspan="6">No hay productos que coincidan.</td></tr>';
 }
 $('#product-search').addEventListener('input', renderProducts);
@@ -131,6 +152,12 @@ function openProduct(product = null) {
   form.elements.category_id.value = product?.category_id || '';
   form.elements.label.value = product?.label || '';
   form.elements.price.value = product?.price ?? '';
+  form.elements.sale_price.value = product?.sale_price ?? '';
+  form.elements.sale_start.value = toLocalDateTime(product?.sale_start);
+  form.elements.sale_end.value = toLocalDateTime(product?.sale_end);
+  form.elements.tax_status.value = product?.tax_status || 'taxable';
+  form.elements.tax_class.value = product?.tax_class || 'standard';
+  form.elements.show_price.checked = product?.show_price ?? true;
   form.elements.stock.value = product?.stock ?? 0;
   form.elements.availability.value = product?.availability || 'available';
   form.elements.sort_order.value = product?.sort_order ?? state.products.length + 1;
@@ -147,7 +174,12 @@ $('#product-form').addEventListener('submit', async (event) => {
   const form = event.currentTarget;
   const id = form.elements.id.value;
   try {
-    await api(id ? `/api/admin/products/${id}` : '/api/admin/products', { method: id ? 'PUT' : 'POST', body: new FormData(form) });
+    const payload = new FormData(form);
+    for (const field of ['sale_start', 'sale_end']) {
+      const value = form.elements[field].value;
+      payload.set(field, value ? new Date(value).toISOString() : '');
+    }
+    await api(id ? `/api/admin/products/${id}` : '/api/admin/products', { method: id ? 'PUT' : 'POST', body: payload });
     $('#product-dialog').close();
     await Promise.all([loadProducts(), loadDashboard()]);
   } catch (error) { message(form, error.message); }
@@ -156,7 +188,15 @@ $('#product-form').addEventListener('submit', async (event) => {
 $('#products-table').addEventListener('click', async (event) => {
   const editId = event.target.dataset.editProduct;
   const deleteId = event.target.dataset.deleteProduct;
+  const toggleProductId = event.target.dataset.toggleProduct;
+  const togglePriceId = event.target.dataset.togglePrice;
   if (editId) openProduct(state.products.find((product) => product.id === Number(editId)));
+  if (toggleProductId) {
+    try { await api(`/api/admin/products/${toggleProductId}/visibility`, { method: 'PATCH' }); await Promise.all([loadProducts(), loadDashboard()]); } catch (error) { alert(error.message); }
+  }
+  if (togglePriceId) {
+    try { await api(`/api/admin/products/${togglePriceId}/price-visibility`, { method: 'PATCH' }); await loadProducts(); } catch (error) { alert(error.message); }
+  }
   if (deleteId && confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) {
     try { await api(`/api/admin/products/${deleteId}`, { method: 'DELETE' }); await Promise.all([loadProducts(), loadDashboard()]); } catch (error) { alert(error.message); }
   }
@@ -230,11 +270,18 @@ async function loadSettings() {
   const form = $('#settings-form');
   Object.entries(settings).forEach(([key, value]) => { if (form.elements[key]) form.elements[key].value = value; });
   form.elements.quote_enabled.checked = settings.quote_enabled === 'true';
+  form.elements.prices_visible.checked = settings.prices_visible === 'true';
   form.elements.admin_email.value = state.adminEmail;
+  const aboutForm = $('#about-form');
+  Object.entries(settings).forEach(([key, value]) => { if (aboutForm.elements[key]) aboutForm.elements[key].value = value; });
 }
 $('#settings-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
-  try { const payload = Object.fromEntries(new FormData(form)); payload.quote_enabled = String(form.elements.quote_enabled.checked); const data = await api('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); state.adminEmail = form.elements.admin_email.value; $('#admin-email').textContent = state.adminEmail; message(form, data.message, true); } catch (error) { message(form, error.message); }
+  try { const payload = Object.fromEntries(new FormData(form)); payload.quote_enabled = String(form.elements.quote_enabled.checked); payload.prices_visible = String(form.elements.prices_visible.checked); const data = await api('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); state.adminEmail = form.elements.admin_email.value; $('#admin-email').textContent = state.adminEmail; message(form, data.message, true); } catch (error) { message(form, error.message); }
+});
+$('#about-form').addEventListener('submit', async (event) => {
+  event.preventDefault(); const form = event.currentTarget;
+  try { const data = await api('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); message(form, data.message, true); } catch (error) { message(form, error.message); }
 });
 $('#password-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;

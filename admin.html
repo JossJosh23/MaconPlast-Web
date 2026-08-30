@@ -87,12 +87,26 @@
             <label>Horario comercial<input name="business_hours"></label>
             <label class="wide">Mensaje inicial de WhatsApp<textarea name="whatsapp_message" rows="3"></textarea></label>
             <label class="wide">Texto del footer<textarea name="footer_text" rows="2"></textarea></label>
+            <label class="toggle-field wide"><input type="checkbox" name="prices_visible" value="true"><span><strong>Mostrar precios en toda la tienda</strong><small>Al desactivarlo, todos los precios públicos aparecerán como “Consultar”.</small></span></label>
             <label class="toggle-field wide"><input type="checkbox" name="quote_enabled" value="true"><span><strong>Mostrar sección de cotización</strong><small>Desactívala si deseas trabajar únicamente con el carrito.</small></span></label>
             <label class="wide">Título de cotización<input name="quote_title"></label>
             <label class="wide">Descripción de cotización<textarea name="quote_description" rows="3"></textarea></label>
             <label>Usuario o correo para iniciar sesión<input type="text" name="admin_email" minlength="3" autocomplete="username"></label>
           </div>
           <button class="primary" type="submit">Guardar configuración</button><p class="form-message" role="status"></p>
+        </form>
+        <form class="settings-form" id="about-form">
+          <div class="settings-heading"><span>SECCIÓN NOSOTROS</span><h2>Historia e indicadores</h2><p>Edita el contenido institucional y las cuatro cifras visibles en la tienda.</p></div>
+          <div class="settings-grid">
+            <label class="wide">Etiqueta superior<input name="about_kicker"></label>
+            <label class="wide">Título<input name="about_title"></label>
+            <label class="wide">Descripción<textarea name="about_description" rows="4"></textarea></label>
+            <label>Indicador 1<input name="about_stat_1_value" type="number" min="0"></label><label>Sufijo 1<input name="about_stat_1_suffix" placeholder="+"></label><label class="wide">Texto 1<input name="about_stat_1_label"></label>
+            <label>Indicador 2<input name="about_stat_2_value" type="number" min="0"></label><label>Sufijo 2<input name="about_stat_2_suffix" placeholder="+"></label><label class="wide">Texto 2<input name="about_stat_2_label"></label>
+            <label>Indicador 3<input name="about_stat_3_value" type="number" min="0"></label><label>Sufijo 3<input name="about_stat_3_suffix" placeholder="%"></label><label class="wide">Texto 3<input name="about_stat_3_label"></label>
+            <label>Indicador 4<input name="about_stat_4_value" type="number" min="0"></label><label>Sufijo 4<input name="about_stat_4_suffix" placeholder="h"></label><label class="wide">Texto 4<input name="about_stat_4_label"></label>
+          </div>
+          <button class="primary" type="submit">Guardar sección Nosotros</button><p class="form-message" role="status"></p>
         </form>
         <form class="settings-form compact" id="password-form"><div class="settings-heading"><span>SEGURIDAD</span><h2>Cambiar contraseña</h2></div><div class="settings-grid"><label>Contraseña actual<input type="password" name="current_password" required></label><label>Nueva contraseña<input type="password" name="new_password" minlength="10" required></label></div><button type="submit">Actualizar contraseña</button><p class="form-message" role="status"></p></form>
       </section>
@@ -107,7 +121,13 @@
         <label class="wide">Nombre<input name="name" required></label>
         <label>Categoría<select name="category_id" required></select></label>
         <label>Etiqueta corta<input name="label" placeholder="Ej. ENVASES"></label>
-        <label>Precio<input name="price" type="number" min="0" step="0.001" required></label>
+        <label>Precio normal ($)<input name="price" type="number" min="0" step="0.001" required></label>
+        <label>Precio rebajado ($)<input name="sale_price" type="number" min="0" step="0.001" placeholder="Opcional"></label>
+        <label>Oferta desde<input name="sale_start" type="datetime-local"><small>Déjalo vacío para empezar inmediatamente.</small></label>
+        <label>Oferta hasta<input name="sale_end" type="datetime-local"><small>Déjalo vacío para no establecer vencimiento.</small></label>
+        <label>Estado del impuesto<select name="tax_status"><option value="taxable">Sujeto a impuestos</option><option value="none">Sin impuestos</option></select></label>
+        <label>Clase de impuesto<select name="tax_class"><option value="standard">Estándar</option><option value="zero">Tasa cero</option><option value="exempt">Exento</option></select></label>
+        <label class="toggle-field"><input name="show_price" type="checkbox" value="true" checked><span><strong>Mostrar precio</strong><small>Control individual para este producto.</small></span></label>
         <label>Stock<input name="stock" type="number" min="0" step="1" value="0"></label>
         <label>Estado<select name="availability"><option value="available">Disponible</option><option value="out_of_stock">Agotado</option><option value="hidden">Oculto</option></select></label>
         <label>Orden<input name="sort_order" type="number" value="0"></label>

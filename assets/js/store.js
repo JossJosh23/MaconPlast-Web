@@ -3,6 +3,7 @@ const $ = (selector, scope = document) => scope.querySelector(selector);
 const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
 const money = (value) => `$${Number(value).toFixed(Number(value) < 1 ? 3 : 2).replace(/0+$/, '').replace(/\.$/, '')}`;
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+const priceVisible = (product) => store.settings.prices_visible !== 'false' && product?.show_price !== false;
 
 const menuButton = $('.menu-btn');
 const navigation = $('.nav');
@@ -34,12 +35,18 @@ revealElements();
 function productCard(product, index) {
   const available = product.availability === 'available';
   const stockText = product.availability === 'out_of_stock' ? 'Agotado' : product.stock > 0 ? `${product.stock} disponibles` : 'Disponible';
+  const visible = priceVisible(product);
+  const priceMarkup = !visible
+    ? '<span>Cotización</span><strong>Consultar</strong>'
+    : product.sale_active
+      ? `<span>Precio especial</span><div class="offer-price"><del>${money(product.regular_price)}</del><strong>${money(product.price)}</strong></div>`
+      : `<span>Precio</span><strong>${money(product.price)}</strong>`;
   return `<article class="product-card reveal" data-category="${escapeHtml(product.category_slug)}" data-id="${product.id}">
     <div class="card-number">${String(index + 1).padStart(2, '0')}</div>
     <span class="stock-badge ${product.availability}">${stockText}</span>
     <div class="product-visual"><img src="/${escapeHtml(product.image)}" alt="${escapeHtml(product.alt || product.name)}" loading="lazy"></div>
     <div class="card-copy"><small>${escapeHtml(product.label || product.category_name)}</small><h3>${escapeHtml(product.name)}</h3><p>${escapeHtml(product.description)}</p>
-      <div class="product-price"><span>Precio</span><strong>${money(product.price)}</strong></div>
+      <div class="product-price ${visible ? '' : 'price-hidden'} ${product.sale_active ? 'has-offer' : ''}">${priceMarkup}</div>
       <button class="add-cart" type="button" data-add-cart="${product.id}" ${available ? '' : 'disabled'} aria-label="${available ? `Agregar ${escapeHtml(product.name)} al carrito` : `${escapeHtml(product.name)} agotado`}">${available ? '+' : '×'}</button>
     </div></article>`;
 }
@@ -85,12 +92,15 @@ function renderCart() {
   $('#cart-count').textContent = count;
   $('#cart-items').innerHTML = store.cart.map((item) => {
     const product = cartProduct(item.product_id);
-    return `<article class="cart-item"><img src="/${escapeHtml(product.image)}" alt=""><div><strong>${escapeHtml(product.name)}</strong><span>${money(product.price)}</span><div class="quantity"><button data-quantity="-1" data-id="${product.id}" aria-label="Quitar uno">−</button><b>${item.quantity}</b><button data-quantity="1" data-id="${product.id}" aria-label="Agregar uno">+</button><button class="remove-item" data-remove="${product.id}">Eliminar</button></div></div><strong>${money(product.price * item.quantity)}</strong></article>`;
+    const visible = priceVisible(product);
+    return `<article class="cart-item"><img src="/${escapeHtml(product.image)}" alt=""><div><strong>${escapeHtml(product.name)}</strong><span>${visible ? money(product.price) : 'Precio por cotizar'}</span><div class="quantity"><button data-quantity="-1" data-id="${product.id}" aria-label="Quitar uno">−</button><b>${item.quantity}</b><button data-quantity="1" data-id="${product.id}" aria-label="Agregar uno">+</button><button class="remove-item" data-remove="${product.id}">Eliminar</button></div></div><strong>${visible ? money(product.price * item.quantity) : 'Consultar'}</strong></article>`;
   }).join('');
   $('#cart-empty').hidden = store.cart.length > 0;
   $('.cart-footer').hidden = store.cart.length === 0;
-  $('#cart-total').textContent = money(cartTotal());
-  $('#checkout-total').textContent = money(cartTotal());
+  const allPricesVisible = store.cart.every((item) => priceVisible(cartProduct(item.product_id)));
+  const displayedTotal = allPricesVisible ? money(cartTotal()) : 'Por cotizar';
+  $('#cart-total').textContent = displayedTotal;
+  $('#checkout-total').textContent = displayedTotal;
 }
 
 $('.catalog-grid').addEventListener('click', (event) => {
@@ -143,6 +153,17 @@ function applySettings() {
   $$('a[href="#contacto"]').forEach((link) => { link.hidden = settings.quote_enabled !== 'true'; });
   $('#quote-title').textContent = settings.quote_title;
   $('#quote-description').textContent = settings.quote_description;
+  $('#about-kicker').textContent = settings.about_kicker;
+  $('#about-title').textContent = settings.about_title;
+  $('#about-description').textContent = settings.about_description;
+  for (let index = 1; index <= 4; index += 1) {
+    const value = Number(settings[`about_stat_${index}_value`]) || 0;
+    const stat = $(`#about-stat-${index}`);
+    stat.dataset.count = value;
+    stat.textContent = value;
+    $(`#about-suffix-${index}`).textContent = settings[`about_stat_${index}_suffix`] || '';
+    $(`#about-label-${index}`).textContent = settings[`about_stat_${index}_label`] || '';
+  }
   const contactEmail = $('.contact-row a[href^="mailto:"]');
   if (contactEmail) { contactEmail.textContent = settings.email; contactEmail.href = `mailto:${settings.email}`; }
   const contactAddress = $('.contact-row p');

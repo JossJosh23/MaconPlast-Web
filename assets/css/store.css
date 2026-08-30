@@ -700,4 +700,7 @@ img { max-width: 100%; }
 @media (hover: none) {
   .product-card:hover, .btn:hover, .whatsapp-widget:hover { transform: none; }
 }
+
+.product-price.price-hidden strong { color: var(--blue); font-size: 18px; }
+.offer-price{display:flex;align-items:baseline;gap:8px}.offer-price del{color:var(--muted);font-size:12px}.product-price.has-offer strong{color:#d43c3c}.product-price.has-offer>span{color:#b52e2e;font-weight:800}
  [hidden]{display:none!important}
