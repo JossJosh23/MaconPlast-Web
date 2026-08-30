@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#f2f8fc">
+  <meta name="theme-color" content="#f2f8fc" id="theme-color">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Maconta Plast">
@@ -13,7 +13,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/store.css?v=20260830-3">
+  <script>document.documentElement.dataset.theme=localStorage.getItem('maconta_theme')||((matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');</script>
+  <link rel="stylesheet" href="assets/css/store.css?v=20260830-5">
 </head>
 <body>
   <header class="header">
@@ -27,6 +28,7 @@
       <a href="#nosotros"><span class="nav-icon" aria-hidden="true">♧</span>Nosotros</a>
       <a href="#contacto"><span class="nav-icon" aria-hidden="true">✉</span>Cotizar</a>
     </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo oscuro" title="Cambiar tema"><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg><svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 15.2A8.5 8.5 0 0 1 8.8 3.6 8.5 8.5 0 1 0 20.4 15.2Z"/></svg></button>
     <button class="cart-trigger" id="cart-open" type="button" aria-label="Abrir carrito"><span aria-hidden="true">🛒</span><strong id="cart-count">0</strong></button>
     <a class="btn btn-small header-cta" id="header-quote" href="#contacto">Cotizar <span>→</span></a>
   </header>
@@ -56,7 +58,7 @@
 
     <section class="products section" id="productos">
       <div class="section-heading reveal">
-        <div><img class="catalog-logo" src="images/catalogo/maconta-plast-logo-cropped.png" alt="Maconta Plast, soluciones en plástico"><span class="kicker">CATÁLOGO COMPLETO</span><h2>Todo lo que necesitas,<br><em>en un solo lugar.</em></h2></div>
+        <div><span class="kicker">CATÁLOGO COMPLETO</span><h2>Todo lo que necesitas,<br><em>en un solo lugar.</em></h2></div>
         <p>Explora nuestros <strong id="catalog-count">29</strong> productos para alimentos, cocina, comercio y limpieza. Consulta presentaciones, disponibilidad y precios actualizados.</p>
       </div>
       <div class="filters" role="group" aria-label="Filtrar productos">
@@ -149,7 +151,7 @@
     </form>
   </dialog>
 
-  <a class="whatsapp-widget" id="whatsapp-widget" href="#" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp"><span>◔</span><strong>WhatsApp</strong></a>
-  <script src="assets/js/store.js?v=20260830-3"></script>
+  <a class="whatsapp-widget" id="whatsapp-widget" href="#" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp"><span aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16.04 3.2A12.7 12.7 0 0 0 5.08 22.3L3.2 29.17l7.03-1.84a12.7 12.7 0 1 0 5.81-24.13Zm0 23.25c-1.9 0-3.76-.51-5.38-1.47l-.39-.23-4.17 1.09 1.11-4.06-.25-.42a10.54 10.54 0 1 1 9.08 5.09Z"/><path d="M21.82 18.54c-.32-.16-1.87-.92-2.16-1.03-.29-.11-.5-.16-.71.16-.21.32-.82 1.03-1 1.24-.19.21-.37.24-.69.08-.32-.16-1.34-.49-2.55-1.58a9.5 9.5 0 0 1-1.77-2.2c-.18-.32-.02-.49.14-.65.14-.14.32-.37.47-.55.16-.19.21-.32.32-.53.1-.21.05-.4-.03-.55-.08-.16-.71-1.71-.97-2.35-.26-.61-.52-.53-.71-.54h-.61c-.21 0-.55.08-.84.4-.29.32-1.11 1.08-1.11 2.64s1.13 3.06 1.29 3.27c.16.21 2.23 3.4 5.4 4.77.75.32 1.34.52 1.8.67.76.24 1.44.21 1.99.13.61-.09 1.87-.77 2.14-1.51.26-.74.26-1.37.18-1.51-.08-.13-.29-.21-.61-.37Z"/></svg></span><strong>WhatsApp</strong></a>
+  <script src="assets/js/store.js?v=20260830-5"></script>
 </body>
 </html>

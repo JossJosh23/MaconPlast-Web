@@ -3,6 +3,18 @@ const $ = (selector, scope = document) => scope.querySelector(selector);
 const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
 const money = (value) => `$${Number(value).toFixed(Number(value) < 1 ? 3 : 2).replace(/0+$/, '').replace(/\.$/, '')}`;
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+
+function applyTheme(theme) {
+  const dark = theme === 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  localStorage.setItem('maconta_theme', dark ? 'dark' : 'light');
+  $('#theme-toggle').setAttribute('aria-label', dark ? 'Activar modo claro' : 'Activar modo oscuro');
+  $('#theme-toggle').setAttribute('aria-pressed', String(dark));
+  $('#theme-color').content = dark ? '#07172b' : '#f2f8fc';
+}
+
+applyTheme(document.documentElement.dataset.theme);
+$('#theme-toggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 const priceVisible = (product) => store.settings.prices_visible !== 'false' && product?.show_price !== false;
 
 const menuButton = $('.menu-btn');
@@ -62,10 +74,20 @@ function renderCatalog() {
 
 $('.filters').addEventListener('click', (event) => {
   const button = event.target.closest('[data-filter]');
-  if (!button) return;
-  store.activeFilter = button.dataset.filter;
-  $$('.filter').forEach((item) => { const active = item === button; item.classList.toggle('active', active); item.setAttribute('aria-pressed', String(active)); });
-  $$('.product-card').forEach((card) => card.classList.toggle('hidden', store.activeFilter !== 'all' && card.dataset.category !== store.activeFilter));
+  if (!button || button.dataset.filter === store.activeFilter) return;
+  const scrollPosition = window.scrollY;
+  const applyFilter = () => {
+    store.activeFilter = button.dataset.filter;
+    $$('.filter').forEach((item) => { const active = item === button; item.classList.toggle('active', active); item.setAttribute('aria-pressed', String(active)); });
+    $$('.product-card').forEach((card) => card.classList.toggle('hidden', store.activeFilter !== 'all' && card.dataset.category !== store.activeFilter));
+    window.scrollTo({ top: scrollPosition, left: 0, behavior: 'instant' });
+  };
+  if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.startViewTransition(applyFilter).finished.finally(() => window.scrollTo({ top: scrollPosition, left: 0, behavior: 'instant' }));
+  } else {
+    applyFilter();
+    requestAnimationFrame(() => window.scrollTo({ top: scrollPosition, left: 0, behavior: 'instant' }));
+  }
 });
 
 $$('[data-footer-filter]').forEach((link) => link.addEventListener('click', () => {
