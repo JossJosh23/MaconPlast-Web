@@ -49,6 +49,7 @@ function renderCatalog() {
   filters.innerHTML = `<button class="filter active" type="button" data-filter="all" aria-pressed="true">Todos</button>${store.categories.map((category) => `<button class="filter" type="button" data-filter="${escapeHtml(category.slug)}" aria-pressed="false">${escapeHtml(category.name)}</button>`).join('')}`;
   $('.catalog-grid').innerHTML = store.products.map(productCard).join('');
   $('#catalog-count').textContent = store.products.length;
+  $('#product').innerHTML = `<option value="">Selecciona un producto</option>${store.products.filter((product) => product.availability !== 'hidden').map((product) => `<option value="${escapeHtml(product.name)}">${escapeHtml(product.name)}</option>`).join('')}<option value="Otro producto o medida especial">Otro producto o medida especial</option>`;
   revealElements($('.catalog-grid'));
 }
 
@@ -108,6 +109,7 @@ $('#cart-items').addEventListener('click', (event) => {
 function openCart() { $('#cart-overlay').hidden = false; $('#cart-drawer').classList.add('open'); $('#cart-drawer').setAttribute('aria-hidden', 'false'); document.body.classList.add('cart-open'); }
 function closeCart() { $('#cart-overlay').hidden = true; $('#cart-drawer').classList.remove('open'); $('#cart-drawer').setAttribute('aria-hidden', 'true'); document.body.classList.remove('cart-open'); }
 $('#cart-open').addEventListener('click', openCart); $('#cart-close').addEventListener('click', closeCart); $('#cart-overlay').addEventListener('click', closeCart);
+$('#header-order').addEventListener('click', openCart);
 $('#checkout-open').addEventListener('click', () => { closeCart(); $('#checkout-dialog').showModal(); });
 $('#checkout-close').addEventListener('click', () => $('#checkout-dialog').close());
 $('#checkout-form').addEventListener('submit', async (event) => {
@@ -138,8 +140,14 @@ function applySettings() {
   $('#footer-address').textContent = settings.address;
   $('#footer-hours').textContent = settings.business_hours;
   $('#footer-text').textContent = settings.footer_text;
+  $('#contacto').hidden = settings.quote_enabled !== 'true';
+  $$('a[href="#contacto"]').forEach((link) => { link.hidden = settings.quote_enabled !== 'true'; });
+  $('#quote-title').textContent = settings.quote_title;
+  $('#quote-description').textContent = settings.quote_description;
   const contactEmail = $('.contact-row a[href^="mailto:"]');
   if (contactEmail) { contactEmail.textContent = settings.email; contactEmail.href = `mailto:${settings.email}`; }
+  const contactAddress = $('.contact-row p');
+  if (contactAddress) contactAddress.textContent = settings.address;
 }
 
 async function loadStore() {
@@ -169,14 +177,18 @@ if (stats && 'IntersectionObserver' in window) new IntersectionObserver((entries
 const sections = $$('main section[id]');
 window.addEventListener('scroll', () => { let current = 'inicio'; sections.forEach((section) => { if (scrollY >= section.offsetTop - 150) current = section.id; }); $$('.nav a').forEach((link) => link.classList.toggle('active', link.getAttribute('href') === `#${current}`)); }, { passive: true });
 
-$('.quote-form').addEventListener('submit', (event) => {
+$('.quote-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget; const status = $('.form-status', form);
   if (!form.checkValidity()) { status.textContent = 'Completa los campos obligatorios antes de continuar.'; form.reportValidity(); return; }
-  const number = String(store.settings.whatsapp || '').replace(/\D/g, '');
   const fields = Object.fromEntries(new FormData(form));
-  const text = `Hola, soy ${fields.name}. Me interesa: ${fields.product}. ${fields.message || ''}`;
-  window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
-  status.textContent = 'Abriendo WhatsApp para enviar tu solicitud…';
+  status.textContent = 'Enviando solicitud…';
+  try {
+    const response = await fetch('/api/quotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_name: fields.name, email: fields.email, phone: fields.phone, product: fields.product, message: fields.message }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    status.textContent = `¡Solicitud #C${String(data.id).padStart(4, '0')} recibida! La revisaremos y te contactaremos.`;
+    form.reset();
+  } catch (error) { status.textContent = error.message || 'No se pudo enviar la solicitud.'; }
 });
 
 loadStore();

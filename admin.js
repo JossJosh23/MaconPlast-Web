@@ -1,4 +1,4 @@
-const state = { products: [], categories: [], orders: [], adminEmail: '', setupRequired: false };
+const state = { products: [], categories: [], orders: [], quotes: [], adminEmail: '', setupRequired: false };
 const $ = (selector, scope = document) => scope.querySelector(selector);
 const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
 const money = (value) => `$${Number(value).toFixed(Number(value) < 1 ? 3 : 2).replace(/0+$/, '').replace(/\.$/, '')}`;
@@ -69,12 +69,13 @@ $('#logout').addEventListener('click', async () => {
   showAuth(false);
 });
 
-const titles = { dashboard: 'Resumen', products: 'Productos', categories: 'Categorías', orders: 'Ventas', settings: 'Configuración' };
+const titles = { dashboard: 'Resumen', products: 'Productos', categories: 'Categorías', orders: 'Ventas', quotes: 'Cotizaciones', settings: 'Configuración' };
 async function openView(name) {
   $$('.admin-nav').forEach((button) => button.classList.toggle('active', button.dataset.view === name));
   $$('.admin-view').forEach((view) => view.classList.toggle('active', view.id === `view-${name}`));
   $('#view-title').textContent = titles[name];
   if (name === 'orders') await loadOrders();
+  if (name === 'quotes') await loadQuotes();
   if (name === 'settings') await loadSettings();
 }
 $$('.admin-nav').forEach((button) => button.addEventListener('click', () => openView(button.dataset.view)));
@@ -85,6 +86,7 @@ async function loadDashboard() {
   $('#metric-products').textContent = metrics.products;
   $('#metric-stock').textContent = metrics.outOfStock;
   $('#metric-orders').textContent = metrics.pendingOrders;
+  $('#metric-quotes').textContent = metrics.pendingQuotes;
   $('#metric-sales').textContent = money(metrics.sales);
 }
 
@@ -192,15 +194,38 @@ $('#orders-list').addEventListener('change', async (event) => {
   try { await api(`/api/admin/orders/${event.target.dataset.orderStatus}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: event.target.value }) }); await Promise.all([loadOrders(), loadDashboard()]); } catch (error) { alert(error.message); }
 });
 
+async function loadQuotes() {
+  state.quotes = await api('/api/admin/quotes');
+  renderQuotes();
+}
+function renderQuotes() {
+  const filter = $('#quote-filter').value;
+  const labels = { new: 'Nueva', reviewing: 'En revisión', answered: 'Respondida', discarded: 'Descartada' };
+  const quotes = state.quotes.filter((quote) => !filter || quote.status === filter);
+  $('#quotes-list').innerHTML = quotes.map((quote) => `<article class="order-card"><div class="order-summary"><strong>#C${String(quote.id).padStart(4, '0')}</strong><div><strong>${escapeHtml(quote.customer_name)}</strong><small>${new Date(`${quote.created_at}Z`).toLocaleString('es-EC')} · ${escapeHtml(quote.product)}</small></div><div class="quote-actions"><a href="mailto:${escapeHtml(quote.email)}?subject=${encodeURIComponent(`Cotización Maconta Plast #${quote.id}`)}">Responder</a><button data-delete-quote="${quote.id}">Eliminar</button></div><select class="order-status status ${quote.status}" data-quote-status="${quote.id}">${Object.entries(labels).map(([value, label]) => `<option value="${value}" ${value === quote.status ? 'selected' : ''}>${label}</option>`).join('')}</select></div><details><summary>Ver solicitud</summary><div class="order-meta"><strong>Correo:</strong> ${escapeHtml(quote.email)}<br><strong>Teléfono:</strong> ${escapeHtml(quote.phone || 'No indicado')}<br><strong>Producto:</strong> ${escapeHtml(quote.product)}<br><strong>Mensaje:</strong> ${escapeHtml(quote.message || 'Sin detalles adicionales')}</div></details></article>`).join('') || '<div class="welcome-card">No hay cotizaciones en este estado.</div>';
+}
+$('#quote-filter').addEventListener('change', renderQuotes);
+$('#refresh-quotes').addEventListener('click', loadQuotes);
+$('#quotes-list').addEventListener('change', async (event) => {
+  if (!event.target.dataset.quoteStatus) return;
+  try { await api(`/api/admin/quotes/${event.target.dataset.quoteStatus}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: event.target.value }) }); await Promise.all([loadQuotes(), loadDashboard()]); } catch (error) { alert(error.message); }
+});
+$('#quotes-list').addEventListener('click', async (event) => {
+  const id = event.target.dataset.deleteQuote;
+  if (!id || !confirm('¿Eliminar esta cotización?')) return;
+  try { await api(`/api/admin/quotes/${id}`, { method: 'DELETE' }); await Promise.all([loadQuotes(), loadDashboard()]); } catch (error) { alert(error.message); }
+});
+
 async function loadSettings() {
   const settings = await api('/api/admin/settings');
   const form = $('#settings-form');
   Object.entries(settings).forEach(([key, value]) => { if (form.elements[key]) form.elements[key].value = value; });
+  form.elements.quote_enabled.checked = settings.quote_enabled === 'true';
   form.elements.admin_email.value = state.adminEmail;
 }
 $('#settings-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
-  try { const data = await api('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); state.adminEmail = form.elements.admin_email.value; $('#admin-email').textContent = state.adminEmail; message(form, data.message, true); } catch (error) { message(form, error.message); }
+  try { const payload = Object.fromEntries(new FormData(form)); payload.quote_enabled = String(form.elements.quote_enabled.checked); const data = await api('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); state.adminEmail = form.elements.admin_email.value; $('#admin-email').textContent = state.adminEmail; message(form, data.message, true); } catch (error) { message(form, error.message); }
 });
 $('#password-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;

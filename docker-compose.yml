@@ -1,0 +1,18 @@
+services:
+  maconta-web:
+    build: .
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      ADMIN_USER: ${ADMIN_USER:-admin1}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin1}
+    expose:
+      - "3000"
+    volumes:
+      - maconta_data:/app/data
+      - maconta_uploads:/app/images/uploads
+
+volumes:
+  maconta_data:
+  maconta_uploads:

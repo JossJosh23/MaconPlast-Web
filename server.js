@@ -8,6 +8,7 @@ const multer = require('multer');
 const { rateLimit } = require('express-rate-limit');
 
 const app = express();
+app.set('trust proxy', 1);
 const root = __dirname;
 const dataDir = path.join(root, 'data');
 const uploadDir = path.join(root, 'images', 'uploads');
@@ -71,6 +72,16 @@ db.exec(`
     quantity INTEGER NOT NULL CHECK(quantity > 0),
     subtotal REAL NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS quotes (
+    id INTEGER PRIMARY KEY,
+    customer_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL DEFAULT '',
+    product TEXT NOT NULL,
+    message TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','reviewing','answered','discarded')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -83,7 +94,10 @@ const defaults = {
   address: 'Atención a nivel nacional',
   business_hours: 'Lunes a viernes · 08:00–17:00',
   footer_text: 'Soluciones plásticas que hacen avanzar tu negocio.',
-  whatsapp_message: 'Hola, quiero información sobre los productos de Maconta Plast.'
+  whatsapp_message: 'Hola, quiero información sobre los productos de Maconta Plast.',
+  quote_enabled: 'true',
+  quote_title: 'Tu próximo proyecto empieza aquí.',
+  quote_description: 'Solicita atención personalizada para compras por volumen, medidas especiales o necesidades empresariales.'
 };
 const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
 Object.entries(defaults).forEach(([key, value]) => insertSetting.run(key, value));
@@ -101,7 +115,7 @@ function seedCatalog() {
   Object.entries(categoryNames).forEach(([slug, name], index) => {
     categoryIds[slug] = Number(addCategory.run(name, slug, index + 1).lastInsertRowid);
   });
-  const products = JSON.parse(fs.readFileSync(path.join(dataDir, 'seed-products.json'), 'utf8'));
+  const products = JSON.parse(fs.readFileSync(path.join(root, 'seed-products.json'), 'utf8'));
   const addProduct = db.prepare(`INSERT INTO products
     (name, category_id, label, description, price, image, alt, stock, availability, sort_order)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -149,7 +163,9 @@ function verifyPassword(password, stored) {
 
 function ensureTemporaryAdmin() {
   const hasAdmins = db.prepare('SELECT COUNT(*) AS total FROM admins').get().total > 0;
-  if (!hasAdmins) db.prepare('INSERT INTO admins (email, password_hash) VALUES (?, ?)').run('admin1', hashPassword('admin1'));
+  const initialUser = process.env.ADMIN_USER || 'admin1';
+  const initialPassword = process.env.ADMIN_PASSWORD || 'admin1';
+  if (!hasAdmins) db.prepare('INSERT INTO admins (email, password_hash) VALUES (?, ?)').run(initialUser.toLowerCase(), hashPassword(initialPassword));
 }
 ensureTemporaryAdmin();
 
@@ -224,8 +240,9 @@ app.get('/api/admin/dashboard', requireAdmin, (_request, response) => {
   const products = db.prepare('SELECT COUNT(*) AS total FROM products').get().total;
   const outOfStock = db.prepare("SELECT COUNT(*) AS total FROM products WHERE availability = 'out_of_stock'").get().total;
   const pendingOrders = db.prepare("SELECT COUNT(*) AS total FROM orders WHERE status = 'pending'").get().total;
+  const pendingQuotes = db.prepare("SELECT COUNT(*) AS total FROM quotes WHERE status IN ('new','reviewing')").get().total;
   const sales = db.prepare("SELECT COALESCE(SUM(total), 0) AS total FROM orders WHERE status != 'cancelled'").get().total;
-  response.json({ products, outOfStock, pendingOrders, sales });
+  response.json({ products, outOfStock, pendingOrders, pendingQuotes, sales });
 });
 
 app.get('/api/admin/categories', requireAdmin, (_request, response) => response.json(db.prepare('SELECT * FROM categories ORDER BY sort_order, name').all()));
@@ -328,6 +345,18 @@ app.post('/api/orders', orderLimiter, (request, response) => {
   }
 });
 
+app.post('/api/quotes', orderLimiter, (request, response) => {
+  if (publicSettings().quote_enabled !== 'true') return response.status(403).json({ error: 'Las solicitudes de cotización están desactivadas temporalmente.' });
+  const customerName = String(request.body.customer_name || '').trim();
+  const email = String(request.body.email || '').trim().toLowerCase();
+  const phone = String(request.body.phone || '').trim();
+  const product = String(request.body.product || '').trim();
+  const message = String(request.body.message || '').trim();
+  if (!customerName || !/^\S+@\S+\.\S+$/.test(email) || !product) return response.status(400).json({ error: 'Completa nombre, correo y producto de interés.' });
+  const result = db.prepare('INSERT INTO quotes (customer_name,email,phone,product,message) VALUES (?,?,?,?,?)').run(customerName, email, phone, product, message);
+  response.status(201).json({ id: Number(result.lastInsertRowid), message: 'Cotización recibida. Nuestro equipo la revisará.' });
+});
+
 app.get('/api/admin/orders', requireAdmin, (_request, response) => {
   const orders = db.prepare('SELECT * FROM orders ORDER BY created_at DESC, id DESC').all();
   const getItems = db.prepare('SELECT * FROM order_items WHERE order_id = ?');
@@ -337,6 +366,17 @@ app.patch('/api/admin/orders/:id', requireAdmin, (request, response) => {
   if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(request.body.status)) return response.status(400).json({ error: 'Estado no válido.' });
   db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(request.body.status, Number(request.params.id));
   response.json({ message: 'Venta actualizada.' });
+});
+
+app.get('/api/admin/quotes', requireAdmin, (_request, response) => response.json(db.prepare('SELECT * FROM quotes ORDER BY created_at DESC, id DESC').all()));
+app.patch('/api/admin/quotes/:id', requireAdmin, (request, response) => {
+  if (!['new', 'reviewing', 'answered', 'discarded'].includes(request.body.status)) return response.status(400).json({ error: 'Estado no válido.' });
+  db.prepare('UPDATE quotes SET status = ? WHERE id = ?').run(request.body.status, Number(request.params.id));
+  response.json({ message: 'Cotización actualizada.' });
+});
+app.delete('/api/admin/quotes/:id', requireAdmin, (request, response) => {
+  db.prepare('DELETE FROM quotes WHERE id = ?').run(Number(request.params.id));
+  response.status(204).end();
 });
 
 app.get('/api/admin/settings', requireAdmin, (_request, response) => response.json(publicSettings()));

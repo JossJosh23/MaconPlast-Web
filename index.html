@@ -28,7 +28,7 @@
       <a href="#contacto"><span class="nav-icon" aria-hidden="true">✉</span>Contacto</a>
     </nav>
     <button class="cart-trigger" id="cart-open" type="button" aria-label="Abrir carrito"><span aria-hidden="true">🛒</span><strong id="cart-count">0</strong></button>
-    <a class="btn btn-small header-cta" href="#contacto">Cotizar ahora <span>↗</span></a>
+    <button class="btn btn-small header-cta" id="header-order" type="button">Hacer pedido <span>→</span></button>
   </header>
 
   <main>
@@ -110,13 +110,13 @@
     </section>
 
     <section class="quote section" id="contacto">
-      <div class="quote-intro reveal"><span class="kicker">HABLEMOS</span><h2>Tu próximo proyecto<br><em>empieza aquí.</em></h2><p>Cuéntanos qué necesitas. Nuestro equipo te responderá con una solución y cotización personalizada.</p><div class="contact-row"><span>✉</span><div><small>ESCRÍBENOS</small><a href="mailto:ventas@maconplast.com">ventas@maconplast.com</a></div></div><div class="contact-row"><span>⌕</span><div><small>VISÍTANOS</small><p>Atención a nivel nacional</p></div></div></div>
+      <div class="quote-intro reveal"><span class="kicker">COTIZACIÓN ESPECIAL</span><h2 id="quote-title">Tu próximo proyecto<br><em>empieza aquí.</em></h2><p id="quote-description">Solicita atención personalizada para compras por volumen, medidas especiales o necesidades empresariales.</p><div class="contact-row"><span>✉</span><div><small>ESCRÍBENOS</small><a href="mailto:ventas@maconplast.com">ventas@maconplast.com</a></div></div><div class="contact-row"><span>⌕</span><div><small>VISÍTANOS</small><p>Atención a nivel nacional</p></div></div></div>
       <form class="quote-form reveal">
         <div class="field"><label for="name">Nombre / Empresa</label><input id="name" name="name" autocomplete="organization" placeholder="¿Cómo te llamamos?" required></div>
         <div class="field split"><div><label for="email">Correo</label><input type="email" id="email" name="email" autocomplete="email" placeholder="tu@empresa.com" required></div><div><label for="phone">Teléfono</label><input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+593 000 000 000"></div></div>
         <div class="field"><label for="product">Producto de interés</label><select id="product" name="product" required><option value="">Selecciona una opción</option><option>Envases y contenedores</option><option>Productos desechables</option><option>Fundas plásticas</option><option>Insumos de cocina e higiene</option><option>Otro producto</option></select></div>
         <div class="field"><label for="message">Cuéntanos más</label><textarea id="message" name="message" rows="3" placeholder="Cantidad, medidas o uso del producto..."></textarea></div>
-        <button class="btn submit" type="submit">Solicitar cotización <span>↗</span></button><p class="form-status" role="status" aria-live="polite"></p>
+        <button class="btn submit" type="submit">Enviar solicitud especial <span>↗</span></button><p class="form-status" role="status" aria-live="polite"></p>
       </form>
     </section>
   </main>

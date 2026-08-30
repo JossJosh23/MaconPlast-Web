@@ -637,3 +637,4 @@ footer > div a:hover { color: var(--cyan); }
   .hero-shade { background: linear-gradient(0deg,rgba(2,24,75,.98) 7%,rgba(3,47,112,.82) 62%,rgba(0,143,206,.14)); }
   .filter { background: rgba(255,255,255,.8); }
 }
+ [hidden]{display:none!important}

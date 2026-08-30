@@ -35,6 +35,7 @@
         <button class="admin-nav" data-view="products"><span>▦</span>Productos</button>
         <button class="admin-nav" data-view="categories"><span>◇</span>Categorías</button>
         <button class="admin-nav" data-view="orders"><span>▤</span>Ventas</button>
+        <button class="admin-nav" data-view="quotes"><span>✦</span>Cotizaciones</button>
         <button class="admin-nav" data-view="settings"><span>⚙</span>Configuración</button>
       </nav>
       <div class="sidebar-bottom"><small id="admin-email"></small><button id="logout">Cerrar sesión</button></div>
@@ -48,6 +49,7 @@
           <article><span>Productos</span><strong id="metric-products">0</strong><small>en el catálogo</small></article>
           <article><span>Agotados</span><strong id="metric-stock">0</strong><small>requieren atención</small></article>
           <article><span>Pedidos pendientes</span><strong id="metric-orders">0</strong><small>por gestionar</small></article>
+          <article><span>Cotizaciones abiertas</span><strong id="metric-quotes">0</strong><small>por responder</small></article>
           <article class="metric-sales"><span>Ventas registradas</span><strong id="metric-sales">$0.00</strong><small>sin pedidos cancelados</small></article>
         </div>
         <div class="welcome-card"><div><span>CONTROL CENTRAL</span><h2>Tu negocio, en un solo lugar.</h2><p>Actualiza el catálogo, controla existencias, revisa pedidos y cambia los datos visibles de la tienda sin editar código.</p></div><button data-go="products">Gestionar productos →</button></div>
@@ -70,6 +72,11 @@
         <div class="orders-list" id="orders-list"></div>
       </section>
 
+      <section class="admin-view" id="view-quotes">
+        <div class="toolbar"><select id="quote-filter"><option value="">Todos los estados</option><option value="new">Nuevas</option><option value="reviewing">En revisión</option><option value="answered">Respondidas</option><option value="discarded">Descartadas</option></select><button id="refresh-quotes">Actualizar</button></div>
+        <div class="orders-list" id="quotes-list"></div>
+      </section>
+
       <section class="admin-view" id="view-settings">
         <form class="settings-form" id="settings-form">
           <div class="settings-heading"><span>DATOS DE LA TIENDA</span><h2>Contacto y footer</h2><p>Estos cambios se reflejan automáticamente en la página pública.</p></div>
@@ -80,6 +87,9 @@
             <label>Horario comercial<input name="business_hours"></label>
             <label class="wide">Mensaje inicial de WhatsApp<textarea name="whatsapp_message" rows="3"></textarea></label>
             <label class="wide">Texto del footer<textarea name="footer_text" rows="2"></textarea></label>
+            <label class="toggle-field wide"><input type="checkbox" name="quote_enabled" value="true"><span><strong>Mostrar sección de cotización</strong><small>Desactívala si deseas trabajar únicamente con el carrito.</small></span></label>
+            <label class="wide">Título de cotización<input name="quote_title"></label>
+            <label class="wide">Descripción de cotización<textarea name="quote_description" rows="3"></textarea></label>
             <label>Correo para iniciar sesión<input type="email" name="admin_email"></label>
           </div>
           <button class="primary" type="submit">Guardar configuración</button><p class="form-message" role="status"></p>
